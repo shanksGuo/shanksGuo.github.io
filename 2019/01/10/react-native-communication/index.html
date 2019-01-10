@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT">
+  <meta name="keywords" content="源码,uml,iOS,ReactNative,">
 
 
 
@@ -80,21 +80,22 @@
 
 
 <meta name="description" content="准备-JavaScriptCoreClasses  JSContext JS的执行上下文  JSManagedValue主要用于防止Native导出对象时持有JSValue导致循环引用  JSValueJavaScript值的引用，转换JavaScript和Native之间的基本数据  JSVirtualMachine提供JS执行环境  JSExport导出Native到JavaS">
+<meta name="keywords" content="源码,uml,iOS,ReactNative">
 <meta property="og:type" content="article">
 <meta property="og:title" content="ReactNative源码分析-通信机制(基于iOS)">
-<meta property="og:url" content="https://shanksguo.github.io/2019/01/10/react-native-communication/index.html">
+<meta property="og:url" content="shanks.pro/2019/01/10/react-native-communication/index.html">
 <meta property="og:site_name" content="香克斯">
 <meta property="og:description" content="准备-JavaScriptCoreClasses  JSContext JS的执行上下文  JSManagedValue主要用于防止Native导出对象时持有JSValue导致循环引用  JSValueJavaScript值的引用，转换JavaScript和Native之间的基本数据  JSVirtualMachine提供JS执行环境  JSExport导出Native到JavaS">
 <meta property="og:locale" content="default">
-<meta property="og:image" content="https://shanksguo.github.io/assets/jscontext.jpg">
-<meta property="og:image" content="https://shanksguo.github.io/assets/jsvalue.jpg">
-<meta property="og:image" content="https://shanksguo.github.io/assets/jsvm.jpg">
-<meta property="og:image" content="https://shanksguo.github.io/assets/uml.jpg">
-<meta property="og:updated_time" content="2019-01-10T06:06:55.953Z">
+<meta property="og:image" content="/assets/jscontext.jpg">
+<meta property="og:image" content="/assets/jsvalue.jpg">
+<meta property="og:image" content="/assets/jsvm.jpg">
+<meta property="og:image" content="/assets/uml.jpg">
+<meta property="og:updated_time" content="2019-01-10T12:43:47.116Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ReactNative源码分析-通信机制(基于iOS)">
 <meta name="twitter:description" content="准备-JavaScriptCoreClasses  JSContext JS的执行上下文  JSManagedValue主要用于防止Native导出对象时持有JSValue导致循环引用  JSValueJavaScript值的引用，转换JavaScript和Native之间的基本数据  JSVirtualMachine提供JS执行环境  JSExport导出Native到JavaS">
-<meta name="twitter:image" content="https://shanksguo.github.io/assets/jscontext.jpg">
+<meta name="twitter:image" content="/assets/jscontext.jpg">
 
 
 
@@ -124,7 +125,7 @@
 
 
 
-  <link rel="canonical" href="https://shanksguo.github.io/2019/01/10/react-native-communication/">
+  <link rel="canonical" href="shanks.pro/2019/01/10/react-native-communication/">
 
 
 
@@ -257,12 +258,12 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://shanksguo.github.io/2019/01/10/react-native-communication/">
+    <link itemprop="mainEntityOfPage" href="shanks.pro/2019/01/10/react-native-communication/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
       <meta itemprop="name" content="shanks">
       <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="image" content="/images/avatar.jpeg">
     </span>
 
     <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
@@ -296,6 +297,28 @@
             
           </span>
 
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/ReactNative/" itemprop="url" rel="index">
+                    <span itemprop="name">ReactNative</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
           
 
           
@@ -456,6 +479,18 @@
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/tags/源码/" rel="tag"># 源码</a>
+          
+            <a href="/tags/uml/" rel="tag"># uml</a>
+          
+            <a href="/tags/iOS/" rel="tag"># iOS</a>
+          
+            <a href="/tags/ReactNative/" rel="tag"># ReactNative</a>
+          
+        </div>
+      
 
       
       
@@ -523,6 +558,8 @@
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
             
+              <img class="site-author-image" itemprop="image" src="/images/avatar.jpeg" alt="shanks">
+            
               <p class="site-author-name" itemprop="name">shanks</p>
               <p class="site-description motion-element" itemprop="description"></p>
           </div>
@@ -541,13 +578,59 @@
             
 
             
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
 
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
             
 
           </nav>
 
           
 
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/shanksguo" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:gyjjone@163.com" target="_blank" title="Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/gyjShanks" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.facebook.com/gyj.shanks" target="_blank" title="FB">
+                      
+                        <i class="fa fa-fw fa-facebook"></i></a>
+                  </span>
+                
+            </div>
           
 
           
