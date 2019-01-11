@@ -91,7 +91,7 @@
 <meta property="og:image" content="/assets/jsvalue.jpg">
 <meta property="og:image" content="/assets/jsvm.jpg">
 <meta property="og:image" content="/assets/uml.jpg">
-<meta property="og:updated_time" content="2019-01-11T02:12:00.800Z">
+<meta property="og:updated_time" content="2019-01-11T02:44:32.617Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ReactNative源码分析-通信机制(基于iOS)">
 <meta name="twitter:description" content="准备-JavaScriptCoreClasses  JSContext JS的执行上下文  JSManagedValue主要用于防止Native导出对象时持有JSValue导致循环引用  JSValueJavaScript值的引用，转换JavaScript和Native之间的基本数据  JSVirtualMachine提供JS执行环境  JSExport导出Native到JavaS">
@@ -462,8 +462,7 @@
 </ul>
 <p>delegate_就是我们上面提到的&lt;ExecutorDelegate&gt;类型指针，实际就是JsToNativeBridge，最终也就走到了我们上面说的callNativeModules。</p>
 <p>到这里，我们已经具备了native call js和js call native的能力。</p>
-<p>##总结</p>
-<p><img src="/assets/uml.jpg" alt="UML图"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><img src="/assets/uml.jpg" alt="UML图"></p>
 
       
     </div>
@@ -654,7 +653,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#准备-JavaScriptCore"><span class="nav-number">1.</span> <span class="nav-text">准备-JavaScriptCore</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ReactNative通信原理"><span class="nav-number">2.</span> <span class="nav-text">ReactNative通信原理</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#准备-JavaScriptCore"><span class="nav-number">1.</span> <span class="nav-text">准备-JavaScriptCore</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ReactNative通信原理"><span class="nav-number">2.</span> <span class="nav-text">ReactNative通信原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
             
 
           </div>
