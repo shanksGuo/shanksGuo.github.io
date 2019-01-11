@@ -79,22 +79,22 @@
 
 
 
-<meta name="description" content="准备-JavaScriptCoreClasses  JSContext JS的执行上下文  JSManagedValue主要用于防止Native导出对象时持有JSValue导致循环引用  JSValueJavaScript值的引用，转换JavaScript和Native之间的基本数据  JSVirtualMachine提供JS执行环境  JSExport导出Native到JavaS">
+<meta name="description" content="准备-JavaScriptCore在开篇，我们先简单准备下JavaScriptCore的知识。这是整个Native和JS沟通的最底层的桥梁。">
 <meta name="keywords" content="ReactNative,源码,uml,iOS">
 <meta property="og:type" content="article">
 <meta property="og:title" content="ReactNative源码分析-通信机制(基于iOS)">
 <meta property="og:url" content="www.shanks.pro/2019/01/10/react-native-communication/index.html">
 <meta property="og:site_name" content="香克斯">
-<meta property="og:description" content="准备-JavaScriptCoreClasses  JSContext JS的执行上下文  JSManagedValue主要用于防止Native导出对象时持有JSValue导致循环引用  JSValueJavaScript值的引用，转换JavaScript和Native之间的基本数据  JSVirtualMachine提供JS执行环境  JSExport导出Native到JavaS">
+<meta property="og:description" content="准备-JavaScriptCore在开篇，我们先简单准备下JavaScriptCore的知识。这是整个Native和JS沟通的最底层的桥梁。">
 <meta property="og:locale" content="default">
 <meta property="og:image" content="/assets/jscontext.jpg">
 <meta property="og:image" content="/assets/jsvalue.jpg">
 <meta property="og:image" content="/assets/jsvm.jpg">
 <meta property="og:image" content="/assets/uml.jpg">
-<meta property="og:updated_time" content="2019-01-11T05:55:27.145Z">
+<meta property="og:updated_time" content="2019-01-11T05:59:01.835Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ReactNative源码分析-通信机制(基于iOS)">
-<meta name="twitter:description" content="准备-JavaScriptCoreClasses  JSContext JS的执行上下文  JSManagedValue主要用于防止Native导出对象时持有JSValue导致循环引用  JSValueJavaScript值的引用，转换JavaScript和Native之间的基本数据  JSVirtualMachine提供JS执行环境  JSExport导出Native到JavaS">
+<meta name="twitter:description" content="准备-JavaScriptCore在开篇，我们先简单准备下JavaScriptCore的知识。这是整个Native和JS沟通的最底层的桥梁。">
 <meta name="twitter:image" content="/assets/jscontext.jpg">
 
 
@@ -347,7 +347,8 @@
       
 
       
-        <h2 id="准备-JavaScriptCore"><a href="#准备-JavaScriptCore" class="headerlink" title="准备-JavaScriptCore"></a>准备-JavaScriptCore</h2><p><strong><em>Classes</em></strong></p>
+        <h2 id="准备-JavaScriptCore"><a href="#准备-JavaScriptCore" class="headerlink" title="准备-JavaScriptCore"></a>准备-JavaScriptCore</h2><p>在开篇，我们先简单准备下JavaScriptCore的知识。这是整个Native和JS沟通的最底层的桥梁。<br><a id="more"></a></p>
+<p><strong><em>Classes</em></strong></p>
 <ul>
 <li><p>JSContext <br><br>JS的执行上下文<br><br><img src="/assets/jscontext.jpg" alt=""></p>
 </li>
