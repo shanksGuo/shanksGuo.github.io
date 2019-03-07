@@ -79,22 +79,22 @@
 
 
 
-<meta name="description" content="背景在使用ReactNative v0.51版本时，发现线上有个崩溃一直没有解决，为了完成App治理crash的目标，所以花了点时间研究如何解决这个问题。 Crash介绍  可以看到如下信息  崩溃位置   [RCTHTTPRequestHandler sendRequest:withDelegate:]   崩溃线程   #27 Thread - 子线程   崩溃原因   NSGenericEx">
+<meta name="description" content="背景在使用ReactNative v0.51版本时，发现线上有个崩溃一直没有解决，为了完成App治理crash的目标，所以花了点时间研究如何解决这个问题。">
 <meta name="keywords" content="ReactNative,iOS,MultiThread,Crash">
 <meta property="og:type" content="article">
 <meta property="og:title" content="记一次ReactNative的多线程crash">
 <meta property="og:url" content="www.shanks.pro/2019/02/18/react-native-imageloader-crash/index.html">
 <meta property="og:site_name" content="香克斯">
-<meta property="og:description" content="背景在使用ReactNative v0.51版本时，发现线上有个崩溃一直没有解决，为了完成App治理crash的目标，所以花了点时间研究如何解决这个问题。 Crash介绍  可以看到如下信息  崩溃位置   [RCTHTTPRequestHandler sendRequest:withDelegate:]   崩溃线程   #27 Thread - 子线程   崩溃原因   NSGenericEx">
+<meta property="og:description" content="背景在使用ReactNative v0.51版本时，发现线上有个崩溃一直没有解决，为了完成App治理crash的目标，所以花了点时间研究如何解决这个问题。">
 <meta property="og:locale" content="default">
 <meta property="og:image" content="/assets/rn-crash-reccomend.png">
 <meta property="og:image" content="/assets/rn-crash-distribute.png">
 <meta property="og:image" content="/assets/rn-crash-invalidate.png">
 <meta property="og:image" content="/assets/rn-crash-imageloader.png">
-<meta property="og:updated_time" content="2019-03-07T09:00:10.031Z">
+<meta property="og:updated_time" content="2019-03-07T09:03:25.229Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="记一次ReactNative的多线程crash">
-<meta name="twitter:description" content="背景在使用ReactNative v0.51版本时，发现线上有个崩溃一直没有解决，为了完成App治理crash的目标，所以花了点时间研究如何解决这个问题。 Crash介绍  可以看到如下信息  崩溃位置   [RCTHTTPRequestHandler sendRequest:withDelegate:]   崩溃线程   #27 Thread - 子线程   崩溃原因   NSGenericEx">
+<meta name="twitter:description" content="背景在使用ReactNative v0.51版本时，发现线上有个崩溃一直没有解决，为了完成App治理crash的目标，所以花了点时间研究如何解决这个问题。">
 <meta name="twitter:image" content="/assets/rn-crash-reccomend.png">
 
 
@@ -347,7 +347,7 @@
       
 
       
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在使用ReactNative v0.51版本时，发现线上有个崩溃一直没有解决，为了完成App治理crash的目标，所以花了点时间研究如何解决这个问题。</p>
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在使用ReactNative v0.51版本时，发现线上有个崩溃一直没有解决，为了完成App治理crash的目标，所以花了点时间研究如何解决这个问题。<br><a id="more"></a></p>
 <h2 id="Crash介绍"><a href="#Crash介绍" class="headerlink" title="Crash介绍"></a>Crash介绍</h2><p><img src="/assets/rn-crash-reccomend.png" alt="alt text"></p>
 <p><img src="/assets/rn-crash-distribute.png" alt="alt text"></p>
 <p>可以看到如下信息</p>
