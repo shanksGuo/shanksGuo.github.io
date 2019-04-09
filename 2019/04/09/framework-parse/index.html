@@ -89,7 +89,7 @@
 <meta property="og:locale" content="default">
 <meta property="og:image" content="/assets/performance-ls-1.jpg">
 <meta property="og:image" content="/assets/performance-ls-2.jpg">
-<meta property="og:updated_time" content="2019-04-09T05:25:55.690Z">
+<meta property="og:updated_time" content="2019-04-09T05:27:27.885Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="浅析.framework的生成">
 <meta name="twitter:description" content="起因最近项目需要将在独立仓库生成的.framework集成进来，同时又希望是static framwork，原因是动态framework在启动时链接会消耗启动时间，这是我们不想看到的。而我们自己独立仓库使用的cocoapods管理，使用cocoapods-packager打出来的framework没有将Resources单独分开，导致带资源bundle的framework被静态链接时会被Test">
@@ -346,6 +346,7 @@
 
       
         <h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>最近项目需要将在独立仓库生成的.framework集成进来，同时又希望是static framwork，原因是动态framework在启动时链接会消耗启动时间，这是我们不想看到的。而我们自己独立仓库使用的cocoapods管理，使用cocoapods-packager打出来的framework没有将Resources单独分开，导致带资源bundle的framework被静态链接时会被Testflight打回（正常编译没问题）。<br>所以我们要做的就是将cocoapods-packager生成的static framework中资源剥离开单独在Build Phases中设置。当然，从生成framwork，到剥离Resources，再到集成项目设置都是在我们CI中自动化实现。</p>
+<a id="more"></a>
 <h2 id="framework是什么"><a href="#framework是什么" class="headerlink" title="framework是什么"></a>framework是什么</h2><p>要把Resources从framework中拆分出来，要先弄清楚framework是什么。从苹果官方文档可以找到答案。</p>
 <blockquote>
 <p>A framework is a hierarchical directory that encapsulates shared resources, such as a dynamic shared library, nib files, image files, localized strings, header files, and reference documentation in a single package. Multiple applications can use all of these resources simultaneously. The system loads them into memory as needed and shares the one copy of the resource among all applications whenever possible.</p>
