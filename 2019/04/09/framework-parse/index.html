@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT">
+  <meta name="keywords" content="framework,iOS,ruby,">
 
 
 
@@ -79,13 +79,21 @@
 
 
 
-<meta property="og:type" content="website">
-<meta property="og:title" content="香克斯">
-<meta property="og:url" content="www.shanks.pro/index.html">
+<meta name="description" content="起因最近项目需要将在独立仓库生成的.framework集成进来，同时又希望是static framwork，原因是动态framework在启动时链接会消耗启动时间，这是我们不想看到的。而我们自己独立仓库使用的cocoapods管理，使用cocoapods-packager打出来的framework没有将Resources单独分开，导致带资源bundle的framework被静态链接时会被Test">
+<meta name="keywords" content="framework,iOS,ruby">
+<meta property="og:type" content="article">
+<meta property="og:title" content="浅析.framework的生成">
+<meta property="og:url" content="www.shanks.pro/2019/04/09/framework-parse/index.html">
 <meta property="og:site_name" content="香克斯">
+<meta property="og:description" content="起因最近项目需要将在独立仓库生成的.framework集成进来，同时又希望是static framwork，原因是动态framework在启动时链接会消耗启动时间，这是我们不想看到的。而我们自己独立仓库使用的cocoapods管理，使用cocoapods-packager打出来的framework没有将Resources单独分开，导致带资源bundle的framework被静态链接时会被Test">
 <meta property="og:locale" content="default">
+<meta property="og:image" content="/assets/performance-ls-1.jpg">
+<meta property="og:image" content="/assets/performance-ls-2.jpg">
+<meta property="og:updated_time" content="2019-04-09T05:25:55.690Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="香克斯">
+<meta name="twitter:title" content="浅析.framework的生成">
+<meta name="twitter:description" content="起因最近项目需要将在独立仓库生成的.framework集成进来，同时又希望是static framwork，原因是动态framework在启动时链接会消耗启动时间，这是我们不想看到的。而我们自己独立仓库使用的cocoapods管理，使用cocoapods-packager打出来的framework没有将Resources单独分开，导致带资源bundle的framework被静态链接时会被Test">
+<meta name="twitter:image" content="/assets/performance-ls-1.jpg">
 
 
 
@@ -115,13 +123,13 @@
 
 
 
-  <link rel="canonical" href="www.shanks.pro/">
+  <link rel="canonical" href="www.shanks.pro/2019/04/09/framework-parse/">
 
 
 
 
 
-  <title>香克斯</title>
+  <title>浅析.framework的生成 | 香克斯</title>
   
 
 
@@ -140,8 +148,7 @@
     
   
 
-  <div class="container sidebar-position-left 
-  page-home">
+  <div class="container sidebar-position-left page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
@@ -234,9 +241,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -266,9 +273,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/04/09/framework-parse/" itemprop="url">浅析.framework的生成</a></h1>
+          <h1 class="post-title" itemprop="name headline">浅析.framework的生成</h1>
         
 
         <div class="post-meta">
@@ -340,9 +345,7 @@
       
 
       
-        
-          
-            <h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>最近项目需要将在独立仓库生成的.framework集成进来，同时又希望是static framwork，原因是动态framework在启动时链接会消耗启动时间，这是我们不想看到的。而我们自己独立仓库使用的cocoapods管理，使用cocoapods-packager打出来的framework没有将Resources单独分开，导致带资源bundle的framework被静态链接时会被Testflight打回（正常编译没问题）。<br>所以我们要做的就是将cocoapods-packager生成的static framework中资源剥离开单独在Build Phases中设置。当然，从生成framwork，到剥离Resources，再到集成项目设置都是在我们CI中自动化实现。</p>
+        <h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>最近项目需要将在独立仓库生成的.framework集成进来，同时又希望是static framwork，原因是动态framework在启动时链接会消耗启动时间，这是我们不想看到的。而我们自己独立仓库使用的cocoapods管理，使用cocoapods-packager打出来的framework没有将Resources单独分开，导致带资源bundle的framework被静态链接时会被Testflight打回（正常编译没问题）。<br>所以我们要做的就是将cocoapods-packager生成的static framework中资源剥离开单独在Build Phases中设置。当然，从生成framwork，到剥离Resources，再到集成项目设置都是在我们CI中自动化实现。</p>
 <h2 id="framework是什么"><a href="#framework是什么" class="headerlink" title="framework是什么"></a>framework是什么</h2><p>要把Resources从framework中拆分出来，要先弄清楚framework是什么。从苹果官方文档可以找到答案。</p>
 <blockquote>
 <p>A framework is a hierarchical directory that encapsulates shared resources, such as a dynamic shared library, nib files, image files, localized strings, header files, and reference documentation in a single package. Multiple applications can use all of these resources simultaneously. The system loads them into memory as needed and shares the one copy of the resource among all applications whenever possible.</p>
@@ -385,8 +388,6 @@
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> filename <span class="keyword">in</span> os.listdir(resource_dir):</span><br><span class="line">    file_path = os.path.join(resource_dir, filename)</span><br><span class="line">    LOG.info(<span class="string">"move file: &#123;&#125; to target dir: &#123;&#125;"</span>.format(file_path, target_path))</span><br><span class="line">    shutil.move(file_path, target_path)</span><br><span class="line">shutil.rmtree(resource_dir)</span><br></pre></td></tr></table></figure>
 <h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a href="https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPFrameworks/Frameworks.html#//apple_ref/doc/uid/10000183-SW1" target="_blank" rel="noopener">What are Frameworks</a></p>
 
-          
-        
       
     </div>
     
@@ -401,306 +402,40 @@
 
     <footer class="post-footer">
       
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="www.shanks.pro/2019/02/18/react-native-imageloader-crash/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="shanks">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.jpeg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="香克斯">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/18/react-native-imageloader-crash/" itemprop="url">记一次ReactNative的多线程crash</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-18T21:53:03+08:00">
-                2019-02-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
+        <div class="post-tags">
           
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Crash/" itemprop="url" rel="index">
-                    <span itemprop="name">Crash</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
+            <a href="/tags/framework/" rel="tag"># framework</a>
           
-
+            <a href="/tags/iOS/" rel="tag"># iOS</a>
           
-            
+            <a href="/tags/ruby/" rel="tag"># ruby</a>
           
-
-          
-          
-
-          
-
-          
-
-          
-
         </div>
-      </header>
-    
+      
 
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
+      
       
       
 
       
-        
-          <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在使用ReactNative v0.51版本时，发现线上有个崩溃一直没有解决，为了完成App治理crash的目标，所以花了点时间研究如何解决这个问题。<br>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2019/02/18/react-native-imageloader-crash/#more" rel="contents">
-              Read more &raquo;
-            </a>
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/18/react-native-imageloader-crash/" rel="next" title="记一次ReactNative的多线程crash">
+                <i class="fa fa-chevron-left"></i> 记一次ReactNative的多线程crash
+              </a>
+            
           </div>
-          <!--/noindex-->
-        
-      
-    </p></div>
-    
-    
-    
 
-    
+          <span class="post-nav-divider"></span>
 
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="www.shanks.pro/2019/01/10/react-native-communication/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="shanks">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.jpeg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="香克斯">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/10/react-native-communication/" itemprop="url">ReactNative源码分析-通信机制(基于iOS)</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
+          <div class="post-nav-prev post-nav-item">
             
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-10T13:40:45+08:00">
-                2019-01-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/ReactNative/" itemprop="url" rel="index">
-                    <span itemprop="name">ReactNative</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
+          </div>
         </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
       
 
       
-        
-          <h2 id="准备-JavaScriptCore"><a href="#准备-JavaScriptCore" class="headerlink" title="准备-JavaScriptCore"></a>准备-JavaScriptCore</h2><p>在开篇，我们先简单准备下JavaScriptCore的知识。这是整个Native和JS沟通的最底层的桥梁。<br>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2019/01/10/react-native-communication/#more" rel="contents">
-              Read more &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </p></div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -710,10 +445,11 @@
   </article>
 
 
-    
-  </section>
 
-  
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
@@ -721,6 +457,10 @@
 
 
           
+
+  
+
+
 
         </div>
         
@@ -741,8 +481,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
             
@@ -832,6 +581,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#起因"><span class="nav-number">1.</span> <span class="nav-text">起因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#framework是什么"><span class="nav-number">2.</span> <span class="nav-text">framework是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cocoapods-packager怎么做的"><span class="nav-number">3.</span> <span class="nav-text">cocoapods-packager怎么做的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#资源分离方案"><span class="nav-number">4.</span> <span class="nav-text">资源分离方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">5.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -972,6 +737,10 @@
 
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
 
   
 
