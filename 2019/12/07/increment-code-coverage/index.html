@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="iOS,增量,覆盖率,.info,lcov,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="什么是增量覆盖率增量覆盖率，顾名思义，指的是每次代码改动的增量部分，开发自测的覆盖程度。 为什么需要增量覆盖率大型项目为了持续保证代码和App的质量，需要对新引入代码进行审查，而在代码被合并进去之前（比如在code review阶段），增量覆盖率无疑是衡量开发对代码的自测重复程度的一个很好的指标。  代码覆盖率不是万能的，只能通过这个手段解决一部分明显通过自测就可以发现的问题。   增量代码覆盖率">
+<meta name="keywords" content="iOS,增量,覆盖率,.info,lcov">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iOS增量代码覆盖率">
+<meta property="og:url" content="www.shanks.pro/2019/12/07/increment-code-coverage/index.html">
+<meta property="og:site_name" content="香克斯">
+<meta property="og:description" content="什么是增量覆盖率增量覆盖率，顾名思义，指的是每次代码改动的增量部分，开发自测的覆盖程度。 为什么需要增量覆盖率大型项目为了持续保证代码和App的质量，需要对新引入代码进行审查，而在代码被合并进去之前（比如在code review阶段），增量覆盖率无疑是衡量开发对代码的自测重复程度的一个很好的指标。  代码覆盖率不是万能的，只能通过这个手段解决一部分明显通过自测就可以发现的问题。   增量代码覆盖率">
+<meta property="og:locale" content="default">
+<meta property="og:image" content="/assets/increment-code-coverage-plan.png">
+<meta property="og:updated_time" content="2019-12-08T08:29:44.022Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="iOS增量代码覆盖率">
+<meta name="twitter:description" content="什么是增量覆盖率增量覆盖率，顾名思义，指的是每次代码改动的增量部分，开发自测的覆盖程度。 为什么需要增量覆盖率大型项目为了持续保证代码和App的质量，需要对新引入代码进行审查，而在代码被合并进去之前（比如在code review阶段），增量覆盖率无疑是衡量开发对代码的自测重复程度的一个很好的指标。  代码覆盖率不是万能的，只能通过这个手段解决一部分明显通过自测就可以发现的问题。   增量代码覆盖率">
+<meta name="twitter:image" content="/assets/increment-code-coverage-plan.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="www.shanks.pro/2019/12/07/increment-code-coverage/">
+
+
+
+
+
+  <title>iOS增量代码覆盖率 | 香克斯</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">香克斯</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="www.shanks.pro/2019/12/07/increment-code-coverage/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="shanks">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="香克斯">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">iOS增量代码覆盖率</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-12-07T10:05:35+08:00">
+                2019-12-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="什么是增量覆盖率"><a href="#什么是增量覆盖率" class="headerlink" title="什么是增量覆盖率"></a>什么是增量覆盖率</h2><p>增量覆盖率，顾名思义，指的是每次代码改动的增量部分，开发自测的覆盖程度。</p>
+<h2 id="为什么需要增量覆盖率"><a href="#为什么需要增量覆盖率" class="headerlink" title="为什么需要增量覆盖率"></a>为什么需要增量覆盖率</h2><p>大型项目为了持续保证代码和App的质量，需要对新引入代码进行审查，而在代码被合并进去之前（比如在code review阶段），增量覆盖率无疑是衡量开发对代码的自测重复程度的一个很好的指标。</p>
+<blockquote>
+<p>代码覆盖率不是万能的，只能通过这个手段解决一部分明显通过自测就可以发现的问题。</p>
+</blockquote>
+<blockquote>
+<p>增量代码覆盖率更偏向于开发使用，保证开发自测的充分程度。</p>
+</blockquote>
+<a id="more"></a>
+<h2 id="怎么实现增量代码覆盖率"><a href="#怎么实现增量代码覆盖率" class="headerlink" title="怎么实现增量代码覆盖率"></a>怎么实现增量代码覆盖率</h2><p><img src="/assets/increment-code-coverage-plan.png" alt=""></p>
+<p>上图展示了基本的思路，主要分3步。</p>
+<ol>
+<li>采集全量覆盖率</li>
+<li>采集代码diff</li>
+<li>根据代码diff和全量覆盖率过滤出增量覆盖率</li>
+</ol>
+<h3 id="采集全量覆盖率"><a href="#采集全量覆盖率" class="headerlink" title="采集全量覆盖率"></a>采集全量覆盖率</h3><p>全量覆盖率的采集，需要以下几步。</p>
+<ul>
+<li>配置工程，使得能在运行时插桩产生覆盖率数据。</li>
+</ul>
+<p>这里我们采用ruby脚本，每次需要的时候自动将配置加到工程里。需要注意的是，如果需要统计的不是主project而是依赖的子project，这个配置需要加到子的project中，因为这样子的project在编译时才能进行IR插桩。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">require</span> <span class="string">'xcodeproj'</span></span><br><span class="line"> <span class="function"><span class="keyword">def</span> <span class="title">add_coverage_build_setting</span><span class="params">()</span></span></span><br><span class="line">    project = Xcodeproj::Project.open(project_path)</span><br><span class="line">    main_target = project.native_targets.first</span><br><span class="line">    main_target.build_configurations.each <span class="keyword">do</span> <span class="params">|config|</span></span><br><span class="line">      <span class="keyword">if</span> config.name == <span class="string">"Debug"</span></span><br><span class="line">        config.build_settings[<span class="string">'GCC_INSTRUMENT_PROGRAM_FLOW_ARCS'</span>] = <span class="string">'YES'</span></span><br><span class="line">        config.build_settings[<span class="string">'GCC_GENERATE_TEST_COVERAGE_FILES'</span>] = <span class="string">'YES'</span></span><br><span class="line">        project.save()</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>编译时采集gcno文件。</li>
+</ul>
+<p>gcno包含了代码计数器和源码的映射关系，编译之后就会生成，具体目录如下。<br>不同架构下的编译产物目录根据PLATFORM_PREFERRED_ARCH不同而有所区别。<br>ps: OBJECT_FILE_DIR_normal和PLATFORM_PREFERRED_ARCH是Xcode编译时的环境变量，可以在运行xcodebuild时加上-showBuildSettings来查看所有环境变量。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OBJECT_FILE_DIR_normal/PLATFORM_PREFERRED_ARCH</span><br></pre></td></tr></table></figure>
+<ul>
+<li>运行时采集gcda文件。<br>gcda 记录了每段代码具体的执行次数，运行时产生，具体生成的目录需要自己指定。</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#if DEBUG</span></span><br><span class="line">    <span class="built_in">NSString</span> *coverageDir = [<span class="keyword">self</span> coverageDir];</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"coverage path:%@"</span>, coverageDir);</span><br><span class="line">    setenv(<span class="string">"GCOV_PREFIX"</span>, [coverageDir cStringUsingEncoding: <span class="built_in">NSUTF8StringEncoding</span>], <span class="number">1</span>);</span><br><span class="line">    setenv(<span class="string">"GCOV_PREFIX_STRIP"</span>, <span class="string">"11"</span>, <span class="number">1</span>);</span><br><span class="line"><span class="meta">#endif</span></span><br></pre></td></tr></table></figure>
+<p>在应用进入后台或者其他时机，可以选择主动调用__gcov_flush();来刷新本地的覆盖率数据。<br>在实际操作中，我们对模拟器和真机采取不同策略，模拟器因为沙盒目录其实就在mac本地，所以我们把gcda移动到我们的工作目录，编译后面生成覆盖率数据。真机我们选择将gcda上传到文件服务器，需要的时候从服务器拉下来辅助我们产生覆盖率数据。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">    __gcov_flush();</span><br><span class="line"><span class="meta">#if TARGET_IPHONE_SIMULATOR</span></span><br><span class="line">    [<span class="keyword">self</span> flushToNative];</span><br><span class="line"><span class="meta">#else</span></span><br><span class="line">    [<span class="keyword">self</span> flushToRemote];</span><br><span class="line"><span class="meta">#endif</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>运行完触发全量覆盖率的生生成。</li>
+</ul>
+<p>全量覆盖率的产生需要借助<a href="https://manpages.debian.org/unstable/lcov/lcov.1.en.html" target="_blank" rel="noopener">lcov</a>和<a href="https://manpages.debian.org/unstable/lcov/genhtml.1.en.html" target="_blank" rel="noopener">genhtml</a>。lcov帮我们生成中间文件info，包含了所有的代码信息和覆盖率信息，genhtml帮我们将info文件转换成可视化html。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 生成info文件</span></span><br><span class="line">lcov --capture --directory &#123;gcda目录&#125; --base-directory &#123;源代码目录&#125; --output-file &#123;指定生成的info文件地址&#125;</span><br><span class="line"><span class="meta">#</span><span class="bash"> 生成html</span></span><br><span class="line">genhtml &#123;生成的info文件地址&#125; --output-directory &#123;指定生成的报告目录&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="获取代码diff信息"><a href="#获取代码diff信息" class="headerlink" title="获取代码diff信息"></a>获取代码diff信息</h3><p>Diff的获取相对简单，我们平常用git就可以拿到，如果用脚本，可以参考以下代码。<br>因为我们最终目的是增量覆盖率，所以我们在这里的核心其实就是拿到git记录中，行前面有+的行信息。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> git</span><br><span class="line"> <span class="function"><span class="keyword">def</span> <span class="title">get_diff</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="string">"""获取diff详情"""</span></span><br><span class="line">        repository = git.Repo(self.repo_path)</span><br><span class="line">        diff = repository.git.diff(self.dst_commit, self.src_commit).split(<span class="string">"\n"</span>)</span><br><span class="line">        ret = &#123;&#125;</span><br><span class="line"></span><br><span class="line">        file_name = <span class="string">""</span></span><br><span class="line">        diff_lines = []</span><br><span class="line">        current_line = <span class="number">0</span></span><br><span class="line">        <span class="keyword">for</span> line <span class="keyword">in</span> diff:</span><br><span class="line">            <span class="keyword">if</span> line.startswith(<span class="string">'diff --git'</span>):</span><br><span class="line">                <span class="comment"># 进入新的block</span></span><br><span class="line">                <span class="keyword">if</span> file_name != <span class="string">""</span>:</span><br><span class="line">                    ret[file_name] = diff_lines</span><br><span class="line">                tmp_result = re.findall(<span class="string">'b/(\S+)$'</span>, line)</span><br><span class="line">                <span class="keyword">if</span> tmp_result:</span><br><span class="line">                    file_name = tmp_result[<span class="number">0</span>]</span><br><span class="line">                    diff_lines = []</span><br><span class="line">                    current_line = <span class="number">0</span></span><br><span class="line">            <span class="keyword">elif</span> re.match(<span class="string">'@@ -\d+,\d+ \+(\d+),\d+ @@'</span>, line):</span><br><span class="line">                match = re.match(<span class="string">'@@ -\d+,\d+ \+(\d+),\d+ @@'</span>, line)</span><br><span class="line">                current_line = int(match.group(<span class="number">1</span>)) - <span class="number">1</span></span><br><span class="line">            <span class="keyword">elif</span> line.startswith(<span class="string">"-"</span>) <span class="keyword">and</span> <span class="keyword">not</span> line.startswith(<span class="string">'---'</span>):</span><br><span class="line">                <span class="keyword">continue</span></span><br><span class="line">            <span class="keyword">elif</span> line.startswith(<span class="string">"+"</span>) <span class="keyword">and</span> <span class="keyword">not</span> line.startswith(<span class="string">'+++'</span>):</span><br><span class="line">                current_line += <span class="number">1</span></span><br><span class="line">                diff_lines.append(current_line)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                current_line += <span class="number">1</span></span><br><span class="line">        ret[file_name] = diff_lines</span><br><span class="line">        change_list = []</span><br><span class="line">        <span class="keyword">for</span> key, value <span class="keyword">in</span> ret.iteritems():</span><br><span class="line">            change_list.append((key, value))</span><br><span class="line">        <span class="keyword">return</span> change_list</span><br></pre></td></tr></table></figure>
+<h3 id="获取增量覆盖率"><a href="#获取增量覆盖率" class="headerlink" title="获取增量覆盖率"></a>获取增量覆盖率</h3><p>现在我们拿到了全量覆盖率，同时也拿到了增量的代码行信息，怎么才能从中过滤出增量的代码覆盖率？<br>如果从最终的html入手去过滤，肯定是费时费力而且不稳定的，那么往前一步，我们在生成html之前有生成一个.info的文件，通过<a href="https://manpages.debian.org/unstable/lcov/geninfo.1.en.html" target="_blank" rel="noopener">geninfo</a>文档我们可以看出，这个文件包含了所有代码的信息以及代码运行的信息，这正是我们需要的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">TN:&lt;test name&gt;</span><br><span class="line"></span><br><span class="line">For each source file referenced in the .da file, there is a section containing filename and coverage data:</span><br><span class="line"></span><br><span class="line">SF:&lt;absolute path to the source file&gt;</span><br><span class="line"></span><br><span class="line">Following is a list of line numbers for each function name found in the source file:</span><br><span class="line"></span><br><span class="line">FN:&lt;line number of function start&gt;,&lt;function name&gt;</span><br><span class="line"></span><br><span class="line">Next, there is a list of execution counts for each instrumented function:</span><br><span class="line"></span><br><span class="line">FNDA:&lt;execution count&gt;,&lt;function name&gt;</span><br><span class="line"></span><br><span class="line">This list is followed by two lines containing the number of functions found and hit:</span><br><span class="line"></span><br><span class="line">FNF:&lt;number of functions found&gt; FNH:&lt;number of function hit&gt;</span><br><span class="line"></span><br><span class="line">Branch coverage information is stored which one line per branch:</span><br><span class="line"></span><br><span class="line">BRDA:&lt;line number&gt;,&lt;block number&gt;,&lt;branch number&gt;,&lt;taken&gt;</span><br><span class="line"></span><br><span class="line">Block number and branch number are gcc internal IDs for the branch. Taken is either &apos;-&apos; if the basic block containing the branch was never executed or a number indicating how often that branch was taken.</span><br><span class="line"></span><br><span class="line">Branch coverage summaries are stored in two lines:</span><br><span class="line"></span><br><span class="line">BRF:&lt;number of branches found&gt; BRH:&lt;number of branches hit&gt;</span><br><span class="line"></span><br><span class="line">Then there is a list of execution counts for each instrumented line (i.e. a line which resulted in executable code):</span><br><span class="line"></span><br><span class="line">DA:&lt;line number&gt;,&lt;execution count&gt;[,&lt;checksum&gt;]</span><br><span class="line"></span><br><span class="line">Note that there may be an optional checksum present for each instrumented line. The current geninfo implementation uses an MD5 hash as checksumming algorithm.</span><br><span class="line"></span><br><span class="line">At the end of a section, there is a summary about how many lines were found and how many were actually instrumented:</span><br><span class="line"></span><br><span class="line">LH:&lt;number of lines with a non-zero execution count&gt; LF:&lt;number of instrumented lines&gt;</span><br><span class="line"></span><br><span class="line">Each sections ends with:</span><br><span class="line"></span><br><span class="line">end_of_record</span><br></pre></td></tr></table></figure>
+<p>所以我们只要解析出info文件，然后通过增量代码的行信息，从info文件中过滤出所有增量代码及其相关覆盖信息，就可以达到我们的效果。</p>
+<ul>
+<li>解析info文件</li>
+</ul>
+<p>这里参考我写的脚本<a href="https://github.com/shanksGuo/InfoParser" target="_blank" rel="noopener">Script</a></p>
+<ul>
+<li>过滤出增量代码重新生成info。</li>
+</ul>
+<p>这里在上一步的脚本中有相关代码，主要是标记info解析出的func是否是diff的方法，最终通过record的to_diff_info重新生成info文件。</p>
+<ul>
+<li>运用genhtml重新生成html。</li>
+</ul>
+<p>这一步还是和全量覆盖率中一致。</p>
+<h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><p>在以上方案中，当多次运行代码，如果代码产生的覆盖率信息有冲突，__gcov_flush();的刷新策略不会将其覆盖，所以如果前后两次代码如果有冲突，很可能我们需要删掉App重新运行，这将是很费劲的。<br>所以我们将llvm的GCDAProfiling.c源码拿来，对覆盖刷新的部分做修改，如果有冲突则删除上一份保留最新的。<br>因为覆盖率插桩是编译器做的，实际运行时也会用到GCDAProfiling，所以我们这样做其实替换了插桩代码用到的GCDAProfiling。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这里大致叙述了做增量覆盖率时的一些思路，想把整个流程做完善并且易于使用，还是需要结合自己工程和开发流程做一些工作，才能让这个工具易用方便。</p>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a href="https://tech.meituan.com/2018/12/27/ios-increment-coverage.html" target="_blank" rel="noopener">美团</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/iOS/" rel="tag"># iOS</a>
+          
+            <a href="/tags/增量/" rel="tag"># 增量</a>
+          
+            <a href="/tags/覆盖率/" rel="tag"># 覆盖率</a>
+          
+            <a href="/tags/info/" rel="tag"># .info</a>
+          
+            <a href="/tags/lcov/" rel="tag"># lcov</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/09/framework-parse/" rel="next" title="浅析.framework的生成">
+                <i class="fa fa-chevron-left"></i> 浅析.framework的生成
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.jpeg" alt="shanks">
+            
+              <p class="site-author-name" itemprop="name">shanks</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">12</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/shanksguo" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:gyjjone@163.com" target="_blank" title="Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/gyjShanks" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.facebook.com/gyj.shanks" target="_blank" title="FB">
+                      
+                        <i class="fa fa-fw fa-facebook"></i></a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是增量覆盖率"><span class="nav-number">1.</span> <span class="nav-text">什么是增量覆盖率</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么需要增量覆盖率"><span class="nav-number">2.</span> <span class="nav-text">为什么需要增量覆盖率</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#怎么实现增量代码覆盖率"><span class="nav-number">3.</span> <span class="nav-text">怎么实现增量代码覆盖率</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#采集全量覆盖率"><span class="nav-number">3.1.</span> <span class="nav-text">采集全量覆盖率</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取代码diff信息"><span class="nav-number">3.2.</span> <span class="nav-text">获取代码diff信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取增量覆盖率"><span class="nav-number">3.3.</span> <span class="nav-text">获取增量覆盖率</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#问题"><span class="nav-number">3.4.</span> <span class="nav-text">问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">5.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shanks</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
