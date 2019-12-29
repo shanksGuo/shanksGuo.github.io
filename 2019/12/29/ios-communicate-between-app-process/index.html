@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="主旨本章主要介绍Google在开源项目EarlGrey中用到的进程间通信的方式eDistantObject的实现原理。 背景在做自动化探索测试的过程中，发现Apple提供的UI测试（黑盒），对App元素的操作有点局限，获取的信息也不能完全满足要求，所以想到是否可以通过在被测试App内部获取和操作元素（白盒），然后在另一个App（测试App）中进行全流程控制，达到兼具白盒和黑盒的效果。  既然能在测">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iOS进程间通信">
+<meta property="og:url" content="www.shanks.pro/2019/12/29/ios-communicate-between-app-process/index.html">
+<meta property="og:site_name" content="香克斯">
+<meta property="og:description" content="主旨本章主要介绍Google在开源项目EarlGrey中用到的进程间通信的方式eDistantObject的实现原理。 背景在做自动化探索测试的过程中，发现Apple提供的UI测试（黑盒），对App元素的操作有点局限，获取的信息也不能完全满足要求，所以想到是否可以通过在被测试App内部获取和操作元素（白盒），然后在另一个App（测试App）中进行全流程控制，达到兼具白盒和黑盒的效果。  既然能在测">
+<meta property="og:locale" content="default">
+<meta property="og:image" content="/assets/socket-osi.png">
+<meta property="og:image" content="/assets/socket-tcp.png">
+<meta property="og:image" content="/assets/edistantobject-client-host.png">
+<meta property="og:updated_time" content="2019-12-29T10:06:29.364Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="iOS进程间通信">
+<meta name="twitter:description" content="主旨本章主要介绍Google在开源项目EarlGrey中用到的进程间通信的方式eDistantObject的实现原理。 背景在做自动化探索测试的过程中，发现Apple提供的UI测试（黑盒），对App元素的操作有点局限，获取的信息也不能完全满足要求，所以想到是否可以通过在被测试App内部获取和操作元素（白盒），然后在另一个App（测试App）中进行全流程控制，达到兼具白盒和黑盒的效果。  既然能在测">
+<meta name="twitter:image" content="/assets/socket-osi.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="www.shanks.pro/2019/12/29/ios-communicate-between-app-process/">
+
+
+
+
+
+  <title>iOS进程间通信 | 香克斯</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">香克斯</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="www.shanks.pro/2019/12/29/ios-communicate-between-app-process/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="shanks">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="香克斯">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">iOS进程间通信</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-12-29T12:33:37+08:00">
+                2019-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="主旨"><a href="#主旨" class="headerlink" title="主旨"></a>主旨</h2><p>本章主要介绍Google在开源项目<a href="https://github.com/google/EarlGrey" target="_blank" rel="noopener">EarlGrey</a>中用到的进程间通信的方式<a href="https://github.com/google/eDistantObject" target="_blank" rel="noopener">eDistantObject</a>的实现原理。</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在做自动化探索测试的过程中，发现Apple提供的UI测试（黑盒），对App元素的操作有点局限，获取的信息也不能完全满足要求，所以想到是否可以通过在被测试App内部获取和操作元素（白盒），然后在另一个App（测试App）中进行全流程控制，达到兼具白盒和黑盒的效果。</p>
+<blockquote>
+<p>既然能在测试App内部操作，为什么还一定需要一个测试App来控制？因为在App内部没法完成所以自动化测试的公共，比如系统Alert的处理。这个不是本章重点，不赘述。</p>
+</blockquote>
+<p>那么问题来了，抛开Apple的UI测试，我们怎么才能在测试App中和被测试App进行通信，这里就需要有一种通信方式来在完成App间的数据沟通。下面我们介绍下eDistantObject的大致原理和实现。<br><a id="more"></a></p>
+<h2 id="基础知识提要"><a href="#基础知识提要" class="headerlink" title="基础知识提要"></a>基础知识提要</h2><h3 id="什么是socket"><a href="#什么是socket" class="headerlink" title="什么是socket"></a>什么是socket</h3><p>引用Unix网络编程中的介绍(1.7章)</p>
+<blockquote>
+<p>The sockets programming interfaces described in this book are interfaces from the upper three<br>layers (the “application”) into the transport layer.<br>大致意思是，socket是一套实现应用册到传输层的接口实现。配合下面这张图会更加清晰一些。</p>
+</blockquote>
+<p><img src="/assets/socket-osi.png" alt="Layers in OSI model and Internet protocol suite."></p>
+<p>至于为什么需要socket，文中也有解释，只要是两点原因。</p>
+<ol>
+<li>上三层协议主要处理应用层信息（FTP/HTTP）而不关注通信细节，而下四层主要处理通信细节而不关注应用层信息。</li>
+<li>上三层作用在用户进程，而下四层通常作为OS内核的一部分提供。</li>
+</ol>
+<p>所以在第四和第五层之间构建这样一个沟通上下的接口就可以理解了。</p>
+<h3 id="socket的工作方式"><a href="#socket的工作方式" class="headerlink" title="socket的工作方式"></a>socket的工作方式</h3><p>Unix网络编程中有一个实现基于TCP的例子(4.1章)，我们可以用这个来解释。</p>
+<p><img src="/assets/socket-tcp.png" alt="Socket functions for elementary TCP client/server."></p>
+<ol>
+<li>server端先创建socket连接-&gt;绑定本地地址-&gt;监听端口-&gt;接受请求。</li>
+<li>client端建立socket连接-&gt;向server端请求建立连接。</li>
+<li>连接建立之后，client向server请求数据，server读取数据之后，给client写数据。</li>
+<li>client收到数据之后读取出来。</li>
+<li>所有任务结束之后断开socket连接。</li>
+</ol>
+<p>有关于图中每个方法的具体细节，可以直接通过man了解到.</p>
+<h2 id="eDistantObject实现"><a href="#eDistantObject实现" class="headerlink" title="eDistantObject实现"></a>eDistantObject实现</h2><p>eDistantObject的README中提供的范例是先在Host端建立一个service，然后在client端根据Host端的端口去调用Host端的方法。这和我们上面的socket通信中的client/server模式很像。我们就先从Host建立service为切入点看下它的代码。</p>
+<h3 id="EDOHostService"><a href="#EDOHostService" class="headerlink" title="EDOHostService"></a>EDOHostService</h3><table>
+<thead>
+<tr>
+<th style="text-align:left">调用顺序</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">[EDOHostService serviceWithPort:rootObject:queue:]</td>
+</tr>
+<tr>
+<td style="text-align:left">[EDOHostService initWithPort:rootObject:serviceName:queue:isToDevice:]</td>
+</tr>
+<tr>
+<td style="text-align:left">[EDOHostService edo_createListenSocket:]</td>
+</tr>
+</tbody>
+</table>
+<p>从入口初始化一路向下，省略掉其中一些变量初始化的工作，我们把关注点放到edo_createListenSocket上，从命名上也能看出，edo_createListenSocket其实创建了一个socket连接，监听请求来的数据。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">- (EDOSocket *)edo_createListenSocket:(<span class="built_in">UInt16</span>)port &#123;</span><br><span class="line">  __<span class="keyword">weak</span> EDOHostService *weakSelf = <span class="keyword">self</span>;</span><br><span class="line">  <span class="keyword">return</span> [EDOSocket listenWithTCPPort:port</span><br><span class="line">                                queue:<span class="literal">nil</span></span><br><span class="line">                       connectedBlock:^(EDOSocket *socket, <span class="built_in">NSError</span> *error) &#123;</span><br><span class="line">                         EDOHostService *strongSelf = weakSelf;</span><br><span class="line">                         <span class="keyword">if</span> (!strongSelf) &#123;</span><br><span class="line">                           [socket invalidate];</span><br><span class="line">                           <span class="keyword">return</span>;</span><br><span class="line">                         &#125;</span><br><span class="line"></span><br><span class="line">                         <span class="keyword">id</span>&lt;EDOChannel&gt; clientChannel = [EDOSocketChannel channelWithSocket:socket];</span><br><span class="line">                         [strongSelf startReceivingRequestsForChannel:clientChannel];</span><br><span class="line">                       &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>edo_createListenSocket的代码里，我们可以看到两部分内容，一部分是EDOSocket创建一个socket监听指定端口，另一部是在回调里处理数据。具体细节能在EDOSocket和startReceivingRequestsForChannel中找到。</p>
+<h3 id="EDOSocket"><a href="#EDOSocket" class="headerlink" title="EDOSocket"></a>EDOSocket</h3><table>
+<thead>
+<tr>
+<th style="text-align:left">调用顺序</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">[EDOSocket listenWithTCPPort:queue:connectedBlock:]</td>
+</tr>
+<tr>
+<td style="text-align:left">[EDOListenSocket listenSocketWithSocket:connectedBlock:]</td>
+</tr>
+</tbody>
+</table>
+<p>EDOSocket的原理基本上都在上面两个方法中了，我们一个一个看。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line">+ (EDOSocket *)listenWithTCPPort:(<span class="built_in">UInt16</span>)port</span><br><span class="line">                           queue:(<span class="built_in">dispatch_queue_t</span>)queue</span><br><span class="line">                  connectedBlock:(EDOSocketConnectedBlock)block &#123;</span><br><span class="line">  <span class="comment">// 省略</span></span><br><span class="line">  <span class="comment">// 1 - socket()</span></span><br><span class="line">  dispatch_fd_t socketFD = edo_CreateSocket(&amp;socketErr);</span><br><span class="line">  <span class="comment">// 省略</span></span><br><span class="line">  <span class="comment">// 2 - bind</span></span><br><span class="line">  <span class="keyword">struct</span> sockaddr_in addr;</span><br><span class="line">  memset(&amp;addr, <span class="number">0</span>, <span class="keyword">sizeof</span>(addr));</span><br><span class="line">  addr.sin_family = AF_INET;</span><br><span class="line">  addr.sin_len = <span class="keyword">sizeof</span>(addr);</span><br><span class="line">  addr.sin_port = htons(port);</span><br><span class="line">  addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);</span><br><span class="line">  <span class="keyword">if</span> (bind(socketFD, (<span class="keyword">struct</span> sockaddr *)&amp;addr, <span class="keyword">sizeof</span>(addr)) != <span class="number">0</span>) &#123;</span><br><span class="line">    close(socketFD);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// listen</span></span><br><span class="line">  <span class="keyword">return</span> [EDOListenSocket listenSocketWithSocket:socketFD</span><br><span class="line">                                  connectedBlock:^(EDOSocket *socket, <span class="built_in">NSError</span> *error) &#123;</span><br><span class="line">                                    <span class="comment">// dispatch the block to the user's queue</span></span><br><span class="line">                                    <span class="built_in">dispatch_async</span>(queue, ^&#123;</span><br><span class="line">                                      block(socket, <span class="literal">nil</span>);</span><br><span class="line">                                    &#125;);</span><br><span class="line">                                  &#125;];</span><br><span class="line">&#125;</span><br><span class="line">+ (EDOListenSocket *)listenSocketWithSocket:(dispatch_fd_t)socketFD</span><br><span class="line">                             connectedBlock:(EDOSocketConnectedBlock)block &#123;</span><br><span class="line">  <span class="comment">// 省略</span></span><br><span class="line">  <span class="comment">// 3 - listen</span></span><br><span class="line">  <span class="keyword">if</span> (listen(socketFD, SOMAXCONN) != <span class="number">0</span>) &#123;</span><br><span class="line">    close(socketFD);</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="built_in">dispatch_queue_t</span> eventQueue =</span><br><span class="line">      dispatch_queue_create(gListenSocketQueueLabel, DISPATCH_QUEUE_SERIAL);</span><br><span class="line"></span><br><span class="line">  dispatch_source_t source =</span><br><span class="line">      dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, (uintptr_t)socketFD, <span class="number">0</span>, eventQueue);</span><br><span class="line"></span><br><span class="line">  EDOListenSocket *listenSocket = [EDOListenSocket socketWithSocket:socketFD source:source];</span><br><span class="line">  __<span class="keyword">weak</span> EDOListenSocket *weakSelf = listenSocket;</span><br><span class="line">  dispatch_source_set_event_handler(source, ^&#123;</span><br><span class="line">    EDOListenSocket *strongSelf = weakSelf;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> nconns = dispatch_source_get_data(source);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (nconns &gt; <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="comment">// 4 - accept</span></span><br><span class="line">      EDOSocket *socket = [strongSelf accept:socketFD];</span><br><span class="line">      <span class="comment">// 5 - 处理数据</span></span><br><span class="line">      <span class="keyword">if</span> (socket) &#123;</span><br><span class="line">        block(socket, <span class="literal">nil</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      --nconns;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">  dispatch_source_set_cancel_handler(source, ^&#123;</span><br><span class="line">    <span class="comment">// Release the socket and reset it to -1.</span></span><br><span class="line">    EDOSocket *strongSelf = weakSelf;</span><br><span class="line">    [strongSelf releaseSocket];</span><br><span class="line">    close(socketFD);</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">  dispatch_resume(source);</span><br><span class="line">  <span class="keyword">return</span> listenSocket;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，上面大致做了3件事</p>
+<ol>
+<li>调用了edo_CreateSocket创建了socket，这是封装后的方法，内部其实直接调用原始socket的socket(AF_INET, SOCK_STREAM, 0)。</li>
+<li>紧接着调用通过bind绑定本地地址。</li>
+<li>调用listen监听连接。</li>
+<li>调用accept接受连接</li>
+<li>通过回调处理数据。</li>
+</ol>
+<p>至此，初始化HostService的任务基本结束，从代码上看，和标准的socket初始化没什么区别。初始化完之后就剩下数据的接受和处理了。</p>
+<blockquote>
+<p>Unix中I/O相关的资源都使用文件描述符操作，所以这里socket创建之后返回的也是文件描述符。Everything is a file！</p>
+</blockquote>
+<h3 id="Host接受数据"><a href="#Host接受数据" class="headerlink" title="Host接受数据"></a>Host接受数据</h3><p>startReceivingRequestsForChannel之前，创建了一个channel来作为发送和接收数据的通道。<br>| 调用顺序 |<br>| :—– |<br>| [EDOSocketChannel channelWithSocket:] |<br>| [EDOSocketChannel initWithSocket:] |<br>| [EDOSocketChannel initWithDispatchIO:] |<br>| [EDOSocket releaseAsDispatchIO] |</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">nullable</span> dispatch_io_t)releaseAsDispatchIO &#123;</span><br><span class="line">  dispatch_fd_t socket = [<span class="keyword">self</span> releaseSocket];</span><br><span class="line">  <span class="comment">// 省略=</span></span><br><span class="line">  <span class="built_in">dispatch_queue_t</span> queue = dispatch_queue_create(<span class="string">"com.google.edo.SocketIO"</span>, DISPATCH_QUEUE_SERIAL);</span><br><span class="line">  dispatch_io_t channel = dispatch_io_create(DISPATCH_IO_STREAM, socket, queue, ^(<span class="keyword">int</span> error) &#123;</span><br><span class="line">    <span class="comment">//省略</span></span><br><span class="line">  &#125;);</span><br><span class="line">  <span class="comment">// 省略</span></span><br><span class="line">  <span class="keyword">return</span> channel;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，EDOSocketChannel的本质是创建了一个Dispatch I/O通道来读取client通过socket传送过来的数据。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)receiveDataWithHandler:(EDOChannelReceiveHandler)handler &#123;</span><br><span class="line">  <span class="built_in">dispatch_queue_t</span> handlerQueue = <span class="keyword">self</span>.handlerQueue;</span><br><span class="line">  dispatch_io_t channel = <span class="keyword">self</span>.channel;</span><br><span class="line">  <span class="comment">//省略</span></span><br><span class="line">  dispatch_io_handler_t dataHandler = ^(<span class="keyword">bool</span> done, dispatch_data_t data, <span class="keyword">int</span> error) &#123;</span><br><span class="line">    <span class="comment">//省略</span></span><br><span class="line">    <span class="built_in">NSMutableData</span> *receivedData =</span><br><span class="line">        [<span class="built_in">NSMutableData</span> dataWithCapacity:dispatch_data_get_size(dataReceived)];</span><br><span class="line">    dispatch_data_apply(dataReceived, ^<span class="keyword">bool</span>(dispatch_data_t region, size_t offset,</span><br><span class="line">                                            <span class="keyword">const</span> <span class="keyword">void</span> *buffer, size_t size) &#123;</span><br><span class="line">      [receivedData appendBytes:buffer length:size];</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="keyword">if</span> (handler) &#123;</span><br><span class="line">      <span class="built_in">dispatch_async</span>(handlerQueue, ^&#123;</span><br><span class="line">        handler(<span class="keyword">self</span>, receivedData, <span class="literal">nil</span>);</span><br><span class="line">      &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  dispatch_io_handler_t frameHandler = ^(<span class="keyword">bool</span> done, dispatch_data_t data, <span class="keyword">int</span> error) &#123;</span><br><span class="line">    size_t payloadSize = EDOGetPayloadSizeFromFrameData(data);</span><br><span class="line">    <span class="comment">//省略许多</span></span><br><span class="line">    dispatch_io_read(channel, <span class="number">0</span>, payloadSize, handlerQueue, dataHandler);</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  dispatch_io_read(channel, <span class="number">0</span>, EDOGetPayloadHeaderSize(), handlerQueue, frameHandler);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>EDOSocketChannel内部再从Dispatch I/O中不断的读取拼接数据并将数据通过handler发送出去。<br>当通道数据发送到外面之后，就需要对收到的数据进行具体的处理。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)startReceivingRequestsForChannel:(<span class="keyword">id</span>&lt;EDOChannel&gt;)channel &#123;</span><br><span class="line">  <span class="comment">//省略无关代码</span></span><br><span class="line">  EDOChannelReceiveHandler receiveHandler =</span><br><span class="line">      ^(<span class="keyword">id</span>&lt;EDOChannel&gt; targetChannel, <span class="built_in">NSData</span> *data, <span class="built_in">NSError</span> *error) &#123;</span><br><span class="line">        EDOChannelReceiveHandler strongHandlerBlock = weakHandlerBlock;</span><br><span class="line">        EDOServiceRequest *request = [<span class="built_in">NSKeyedUnarchiver</span> edo_unarchiveObjectWithData:data];</span><br><span class="line">        <span class="built_in">NSString</span> *requestClassName = <span class="built_in">NSStringFromClass</span>([request <span class="keyword">class</span>]);</span><br><span class="line">        <span class="comment">//获取匹配的handler</span></span><br><span class="line">        EDORequestHandler handler = EDOHostService.handlers[requestClassName];</span><br><span class="line">        __block EDOServiceResponse *response = <span class="literal">nil</span>;</span><br><span class="line">        <span class="built_in">NSError</span> *error;</span><br><span class="line">        <span class="keyword">if</span> (handler) &#123;</span><br><span class="line">          __<span class="keyword">weak</span> EDOServiceRequest *weakRequest = request;</span><br><span class="line">          <span class="keyword">void</span> (^requestHandler)(<span class="keyword">void</span>) = ^&#123;</span><br><span class="line">            uint64_t currentTime = mach_absolute_time();</span><br><span class="line">            response = handler(weakRequest, weakSelf);</span><br><span class="line">            response.duration = EDOGetMillisecondsSinceMachTime(currentTime);</span><br><span class="line">          &#125;;</span><br><span class="line">          [strongSelf.executor handleBlock:requestHandler error:&amp;error];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">NSData</span> *responseData = [<span class="built_in">NSKeyedArchiver</span> edo_archivedDataWithObject:response];</span><br><span class="line">        <span class="comment">// 发送respone</span></span><br><span class="line">        [targetChannel sendData:responseData withCompletionHandler:<span class="literal">nil</span>];</span><br><span class="line">        <span class="comment">// 循环直到全部处理完</span></span><br><span class="line">        <span class="keyword">if</span> ([strongSelf edo_shouldReceiveData:channel]) &#123;</span><br><span class="line">          [targetChannel receiveDataWithHandler:strongHandlerBlock];</span><br><span class="line">        &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;;</span><br><span class="line">  receiveHandler = [receiveHandler <span class="keyword">copy</span>];</span><br><span class="line">  [channel receiveDataWithHandler:receiveHandler];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里主要解析出request，然后根据request的类型，去除对应的handeler，执行完之后如果将response（包装成EDOObject）发送会client端。其中handler主要有以下几个:</p>
+<ul>
+<li>EDOClassRequest</li>
+<li>EDOInvocationRequest</li>
+<li>EDOMethodSignatureRequest</li>
+<li>EDOObjectAliveRequest</li>
+<li>EDOObjectRequest</li>
+<li>EDOObjectReleaseRequest</li>
+</ul>
+<p>至此Host端（我们熟悉的socket中的Server端）以及全部结束。根据socket的流程，我们不难猜想出Client端的工作流程。</p>
+<h3 id="EDOClientService"><a href="#EDOClientService" class="headerlink" title="EDOClientService"></a>EDOClientService</h3><table>
+<thead>
+<tr>
+<th style="text-align:left">调用顺序</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">[EDOClientService responseObjectWithRequest:onPort:]</td>
+</tr>
+<tr>
+<td style="text-align:left">[EDOClientService sendSynchronousRequest:onPort:]</td>
+</tr>
+<tr>
+<td style="text-align:left">[EDOClientService sendSynchronousRequest:onPort:withExecutor]</td>
+</tr>
+<tr>
+<td style="text-align:left">[EDOChannelPool channelWithPort:error:]</td>
+</tr>
+<tr>
+<td style="text-align:left">[EDOChannelPool edo_createChannelWithPort:error:]</td>
+</tr>
+<tr>
+<td style="text-align:left">[EDOSocket socketWithTCPPort:queue:error:]</td>
+</tr>
+<tr>
+<td style="text-align:left">[EDOSocket connectWithTCPPort:queue:connectedBlock:]</td>
+</tr>
+</tbody>
+</table>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">+ (<span class="keyword">void</span>)connectWithTCPPort:(<span class="built_in">UInt16</span>)port</span><br><span class="line">                     queue:(<span class="built_in">dispatch_queue_t</span>)queue</span><br><span class="line">            connectedBlock:(EDOSocketConnectedBlock)block &#123;</span><br><span class="line">  <span class="comment">// 1 - socket</span></span><br><span class="line">  dispatch_fd_t socketFD = edo_CreateSocket(&amp;socketErr);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">struct</span> sockaddr_in addr;</span><br><span class="line">  memset(&amp;addr, <span class="number">0</span>, <span class="keyword">sizeof</span>(addr));</span><br><span class="line">  addr.sin_family = AF_INET;</span><br><span class="line">  addr.sin_port = htons(port);</span><br><span class="line">  addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);</span><br><span class="line">  <span class="comment">// 2 - connect</span></span><br><span class="line">  <span class="keyword">int</span> ret = connect(socketFD, (<span class="keyword">struct</span> sockaddr <span class="keyword">const</span> *)&amp;addr, <span class="keyword">sizeof</span>(addr));</span><br><span class="line">  socketErr = errno;</span><br><span class="line">  <span class="keyword">if</span> (ret != <span class="number">0</span> &amp;&amp; socketErr != EINPROGRESS) &#123;</span><br><span class="line">    edo_RunHandlerWithErrorInQueueWithBlock(socketErr, queue, block);</span><br><span class="line">    close(socketFD);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>明显可以看到，这里也是遵循标准socket的流程，做了两件事。</p>
+<ol>
+<li>调用socket()创建socket。</li>
+<li>调用connect和Host建立连接。</li>
+</ol>
+<p>现在两边连接已经建立，下面就到了Client调用Host的时候。</p>
+<h3 id="EDOObject"><a href="#EDOObject" class="headerlink" title="EDOObject"></a>EDOObject</h3><p>官方README是这样说的</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)someMethod &#123;</span><br><span class="line">  <span class="comment">// The object, fetched remotely from the host is seen by the client to be the same as a local</span></span><br><span class="line">  <span class="comment">// object.</span></span><br><span class="line">  FooClass *rootObject = [EDOClientService rootObjectWithPort:portNumber];</span><br><span class="line">  [rootObject method1];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的FooClass就是一个在Host中实现的普通类，之所以在Client进程中能够直接调用，是因为EDOClientService返回的是EDOObject，method1的实现并不是在Client进程，所以看起来直接调用method1能成功，是因为真正的调用会被EDOObject发送到Host端，然后将数据返回，这中间就用到OC的消息转发+socket通信。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//EDOObject+Invocation</span></span><br><span class="line">- (<span class="built_in">NSMethodSignature</span> *)methodSignatureForSelector:(SEL)selector &#123;</span><br><span class="line">  <span class="comment">// TODO(haowoo): Cache the signature.</span></span><br><span class="line">  EDOServiceRequest *request = [EDOMethodSignatureRequest requestWithObject:<span class="keyword">self</span>.remoteAddress</span><br><span class="line">                                                                       port:<span class="keyword">self</span>.servicePort</span><br><span class="line">                                                                   selector:selector];</span><br><span class="line">  EDOMethodSignatureResponse *response = (EDOMethodSignatureResponse *)[EDOClientService</span><br><span class="line">      sendSynchronousRequest:request</span><br><span class="line">                      onPort:<span class="keyword">self</span>.servicePort.hostPort];</span><br><span class="line">  <span class="built_in">NSString</span> *signature = response.signature;</span><br><span class="line">  <span class="keyword">return</span> signature ? [<span class="built_in">NSMethodSignature</span> signatureWithObjCTypes:signature.UTF8String] : <span class="literal">nil</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** Forwards the invocation to the remote. */</span></span><br><span class="line">- (<span class="keyword">void</span>)forwardInvocation:(<span class="built_in">NSInvocation</span> *)invocation &#123;</span><br><span class="line">  [<span class="keyword">self</span> edo_forwardInvocation:invocation selector:invocation.selector returnByValue:<span class="literal">NO</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)edo_forwardInvocation:(<span class="built_in">NSInvocation</span> *)invocation</span><br><span class="line">                     selector:(SEL)selector</span><br><span class="line">                returnByValue:(<span class="built_in">BOOL</span>)returnByValue &#123;</span><br><span class="line">  EDOInvocationRequest *request = [EDOInvocationRequest requestWithInvocation:invocation</span><br><span class="line">                                                                       target:<span class="keyword">self</span></span><br><span class="line">                                                                     selector:selector</span><br><span class="line">                                                                returnByValue:returnByValue</span><br><span class="line">                                                                      service:service];</span><br><span class="line">  EDOExecutor *executor = [EDOHostService serviceForCurrentExecutingQueue].executor;</span><br><span class="line">  EDOInvocationResponse *response =</span><br><span class="line">      (EDOInvocationResponse *)[EDOClientService sendSynchronousRequest:request</span><br><span class="line">                                                                 onPort:<span class="keyword">self</span>.servicePort.hostPort</span><br><span class="line">                                                           withExecutor:executor];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>EDOObject+Invocation文件中，覆写了methodSignatureForSelector和forwardInvocation，因为method1方法在EDOObject中肯定不存在，所以会直接走转发流程，所以消息会被封装，通过EDOChannel发送到Host进程，从Host进程拿返回数据。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过以上代码分析，可以总结出，eDistantObject使用了标准的socket流程在Host进程和Client进程建立了socket连接，然后将Client中的方法调用全部以消息转发的形式发送到Host进程，由Host进程处理完毕再返回被Client进程，达到我们表面上看起来的跨进程调用方法。<br>eDistantObject在README中也给出了一张原理图，也很好的诠释了这一过程。</p>
+<p><img src="/assets/edistantobject-client-host.png" alt="Client-Host"></p>
+<h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><ul>
+<li><a href="https://github.com/google/eDistantObject/blob/master/docs/detail.md" target="_blank" rel="noopener">eDistantObject</a></li>
+<li><a href="https://scoecomp.files.wordpress.com/2014/02/2003-unix-network-programming-vol-1-3rd-ed.pdf" target="_blank" rel="noopener">UNIX Network Programming</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/12/07/increment-code-coverage/" rel="next" title="iOS增量代码覆盖率">
+                <i class="fa fa-chevron-left"></i> iOS增量代码覆盖率
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.jpeg" alt="shanks">
+            
+              <p class="site-author-name" itemprop="name">shanks</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">12</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/shanksguo" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:gyjjone@163.com" target="_blank" title="Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/gyjShanks" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.facebook.com/gyj.shanks" target="_blank" title="FB">
+                      
+                        <i class="fa fa-fw fa-facebook"></i></a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#主旨"><span class="nav-number">1.</span> <span class="nav-text">主旨</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">2.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基础知识提要"><span class="nav-number">3.</span> <span class="nav-text">基础知识提要</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是socket"><span class="nav-number">3.1.</span> <span class="nav-text">什么是socket</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#socket的工作方式"><span class="nav-number">3.2.</span> <span class="nav-text">socket的工作方式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#eDistantObject实现"><span class="nav-number">4.</span> <span class="nav-text">eDistantObject实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#EDOHostService"><span class="nav-number">4.1.</span> <span class="nav-text">EDOHostService</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EDOSocket"><span class="nav-number">4.2.</span> <span class="nav-text">EDOSocket</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Host接受数据"><span class="nav-number">4.3.</span> <span class="nav-text">Host接受数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EDOClientService"><span class="nav-number">4.4.</span> <span class="nav-text">EDOClientService</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EDOObject"><span class="nav-number">4.5.</span> <span class="nav-text">EDOObject</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">6.</span> <span class="nav-text">参考文档</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shanks</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

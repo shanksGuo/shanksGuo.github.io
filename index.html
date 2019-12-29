@@ -249,6 +249,135 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="www.shanks.pro/2019/12/29/ios-communicate-between-app-process/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="shanks">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="香克斯">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/12/29/ios-communicate-between-app-process/" itemprop="url">iOS进程间通信</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-12-29T12:33:37+08:00">
+                2019-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          <h2 id="主旨"><a href="#主旨" class="headerlink" title="主旨"></a>主旨</h2><p>本章主要介绍Google在开源项目<a href="https://github.com/google/EarlGrey" target="_blank" rel="noopener">EarlGrey</a>中用到的进程间通信的方式<a href="https://github.com/google/eDistantObject" target="_blank" rel="noopener">eDistantObject</a>的实现原理。</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在做自动化探索测试的过程中，发现Apple提供的UI测试（黑盒），对App元素的操作有点局限，获取的信息也不能完全满足要求，所以想到是否可以通过在被测试App内部获取和操作元素（白盒），然后在另一个App（测试App）中进行全流程控制，达到兼具白盒和黑盒的效果。</p>
+<blockquote>
+<p>既然能在测试App内部操作，为什么还一定需要一个测试App来控制？因为在App内部没法完成所以自动化测试的公共，比如系统Alert的处理。这个不是本章重点，不赘述。</p>
+</blockquote>
+<p>那么问题来了，抛开Apple的UI测试，我们怎么才能在测试App中和被测试App进行通信，这里就需要有一种通信方式来在完成App间的数据沟通。下面我们介绍下eDistantObject的大致原理和实现。<br>
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/12/29/ios-communicate-between-app-process/#more" rel="contents">
+              Read more &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </p></div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="www.shanks.pro/2019/12/07/increment-code-coverage/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -853,7 +982,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-count">5</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
