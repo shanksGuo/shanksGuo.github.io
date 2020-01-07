@@ -40,13 +40,13 @@
     
       <category term="iOS" scheme="www.shanks.pro/tags/iOS/"/>
     
+      <category term="进程间通信" scheme="www.shanks.pro/tags/%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/"/>
+    
       <category term="eDistantObject" scheme="www.shanks.pro/tags/eDistantObject/"/>
     
       <category term="EarlGrey" scheme="www.shanks.pro/tags/EarlGrey/"/>
     
       <category term="socket" scheme="www.shanks.pro/tags/socket/"/>
-    
-      <category term="进程间通信" scheme="www.shanks.pro/tags/%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1/"/>
     
   </entry>
   
