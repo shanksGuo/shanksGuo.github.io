@@ -38,11 +38,11 @@
     
       <category term="iOS" scheme="www.shanks.pro/tags/iOS/"/>
     
-      <category term="Explore" scheme="www.shanks.pro/tags/Explore/"/>
-    
       <category term="Python" scheme="www.shanks.pro/tags/Python/"/>
     
       <category term="Ruby" scheme="www.shanks.pro/tags/Ruby/"/>
+    
+      <category term="Explore" scheme="www.shanks.pro/tags/Explore/"/>
     
   </entry>
   
