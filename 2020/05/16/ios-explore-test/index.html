@@ -90,7 +90,7 @@
 <meta property="og:description" content="背景App中经常会有crash，为了治理crash，我们尝试了各自手段，包括提交代码前的静态检测，单元测试等，但是还是会有crash被带到线上，而一旦上线，所带来的影响和修复成本都是很大的。借鉴我们组Android同事的想法，有目的有策略地对App自动化的探索（类似于智能的Monkey），探索到的页面越多，发现问题的可能性越大。将问题收集提前报出来，就可以避免带到线上。 本章我们对探索的策略不作细">
 <meta property="og:locale" content="default">
 <meta property="og:image" content="/assets/ios-explore-process.png">
-<meta property="og:updated_time" content="2020-05-16T08:24:30.352Z">
+<meta property="og:updated_time" content="2020-05-16T08:30:09.627Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="闲话iOS探索测试实现">
 <meta name="twitter:description" content="背景App中经常会有crash，为了治理crash，我们尝试了各自手段，包括提交代码前的静态检测，单元测试等，但是还是会有crash被带到线上，而一旦上线，所带来的影响和修复成本都是很大的。借鉴我们组Android同事的想法，有目的有策略地对App自动化的探索（类似于智能的Monkey），探索到的页面越多，发现问题的可能性越大。将问题收集提前报出来，就可以避免带到线上。 本章我们对探索的策略不作细">
@@ -391,10 +391,10 @@
 <h3 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h3><p>截止目前为止，一小时探索有80个页面，其中还有很多问题没解决，需要持续完善。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在实现整个流程的过程中，踩了不少坑，同时也对UI测试，进程通信，日志解析等方面加深了理解，踩坑使我进步。</p>
 <h2 id="QA"><a href="#QA" class="headerlink" title="QA"></a>QA</h2><p>Q：为什么探索仓库和主仓库分开？<br>A：这是为了和主仓库解耦，探索的所有功能都不会带上线，这样做能保持主仓库的代码的干净，而且探索仓库可以随时迭代，不受主仓库制约。</p>
-<p>Q：怎么将探索时间这个参数传入进入App。<br>A：通过设置工程文件的<code>GCC_PREPROCESSOR_DEFINITIONS</code>或者在<code>xcodebuild</code>时传入</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xcodebuild <span class="built_in">test</span> xxx GCC_PREPROCESSOR_DEFINITIONS=<span class="string">"DEBUG=1 EXPLORE_TIME=1200"</span></span><br></pre></td></tr></table></figure>
+<p>Q：怎么将探索时间这个参数传入进入App。<br>A：通过设置工程文件的<code>GCC_PREPROCESSOR_DEFINITIONS</code>或者在<code>xcodebuild</code>时传入<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xcodebuild <span class="built_in">test</span> xxx GCC_PREPROCESSOR_DEFINITIONS=<span class="string">"DEBUG=1 EXPLORE_TIME=1200"</span></span><br></pre></td></tr></table></figure></p>
 <p>然后在iOS代码中，使用以下方式获取，参考<a href="http://web.archive.org/web/20160304001326/http://gcc.gnu.org/onlinedocs/cpp/Stringification.html" target="_blank" rel="noopener">Stringification</a>：</p>
 <figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#define EXPLORE_MACRO_NAME(f) #f</span></span><br><span class="line"><span class="meta">#define EXPLORE_MACRO_VALUE(f) EXPLORE_MACRO_NAME(f)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">char</span> * exploreTimeString = EXPLORE_MACRO_VALUE(EXPLORE_TIME);</span><br><span class="line"><span class="built_in">NSInteger</span> exploreTime = [[<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"%s"</span>, exploreTimeString] integerValue];</span><br></pre></td></tr></table></figure>
+<p>Q：Host App异常退出时，为什么不能在Test App多次运行Host App，而要通过脚本重新运行<code>xcodebuild</code>?<br>A：因为我们每次运行都需要采集Host App的运行日志，如果通过Test App重启Host App，那么等最后结束，我们只能拿到最后一次Host App运行的日志，会遗漏之前启动运行的页面/崩溃信息。</p>
 <h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><ul>
 <li><a href="https://github.com/google/EarlGrey.git" target="_blank" rel="noopener">EarlGrey</a></li>
 <li><a href="https://github.com/kif-framework/KIF" target="_blank" rel="noopener">KIF</a></li>
