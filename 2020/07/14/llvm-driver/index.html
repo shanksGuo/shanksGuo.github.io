@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="clang,LLVM,Driver,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="香克斯" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="什么是Driver在单独编译文件时，我们经常会使用到如下的一些命令 1clang -ccc-print-phases main.m 这里我们使用的’clang’其实不是我们通常所说的llvm的编译前端clang，而是一个命令行工具，指的就是Clang Driver，它是一个驱动，是面向用户提供接口，内部解析参数，调用编译的中的工具完成编译的过程。">
+<meta name="keywords" content="clang,LLVM,Driver">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLVM-Driver笔记">
+<meta property="og:url" content="www.shanks.pro/2020/07/14/llvm-driver/index.html">
+<meta property="og:site_name" content="香克斯">
+<meta property="og:description" content="什么是Driver在单独编译文件时，我们经常会使用到如下的一些命令 1clang -ccc-print-phases main.m 这里我们使用的’clang’其实不是我们通常所说的llvm的编译前端clang，而是一个命令行工具，指的就是Clang Driver，它是一个驱动，是面向用户提供接口，内部解析参数，调用编译的中的工具完成编译的过程。">
+<meta property="og:locale" content="default">
+<meta property="og:image" content="/assets/llvm_driver_architecture.png">
+<meta property="og:updated_time" content="2020-07-14T09:56:18.495Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="LLVM-Driver笔记">
+<meta name="twitter:description" content="什么是Driver在单独编译文件时，我们经常会使用到如下的一些命令 1clang -ccc-print-phases main.m 这里我们使用的’clang’其实不是我们通常所说的llvm的编译前端clang，而是一个命令行工具，指的就是Clang Driver，它是一个驱动，是面向用户提供接口，内部解析参数，调用编译的中的工具完成编译的过程。">
+<meta name="twitter:image" content="/assets/llvm_driver_architecture.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="www.shanks.pro/2020/07/14/llvm-driver/">
+
+
+
+
+
+  <title>LLVM-Driver笔记 | 香克斯</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-155157853-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">香克斯</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="www.shanks.pro/2020/07/14/llvm-driver/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="shanks">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="香克斯">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">LLVM-Driver笔记</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-07-14T17:46:00+08:00">
+                2020-07-14
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/LLVM/" itemprop="url" rel="index">
+                    <span itemprop="name">LLVM</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="什么是Driver"><a href="#什么是Driver" class="headerlink" title="什么是Driver"></a>什么是Driver</h1><p>在单独编译文件时，我们经常会使用到如下的一些命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">clang -ccc-print-phases main.m</span><br></pre></td></tr></table></figure>
+<p>这里我们使用的’clang’其实不是我们通常所说的llvm的编译前端clang，而是一个命令行工具，指的就是Clang Driver，它是一个驱动，是面向用户提供接口，内部解析参数，调用编译的中的工具完成编译的过程。</p>
+<a id="more"></a>
+<h1 id="Driver怎么设计"><a href="#Driver怎么设计" class="headerlink" title="Driver怎么设计"></a>Driver怎么设计</h1><p>关于这点，clang官方文档有介绍，我这里做个总结</p>
+<p><a href="https://clang.llvm.org/docs/DriverInternals.html" target="_blank" rel="noopener">Clang 11 documentation</a></p>
+<h2 id="特点和目标"><a href="#特点和目标" class="headerlink" title="特点和目标"></a>特点和目标</h2><ol>
+<li><p>与GCC的兼容性</p>
+<p> 官方的解释是与GCC的兼容可以让用户在他们的工程中快速使用clang，我理解隐含的意思是为了和GCC抢占用户，这是必须的。</p>
+</li>
+<li><p>灵活性</p>
+<p> 这个很好理解，和写代码一样，随着clang和LLVM的发展，足够的灵活性保证了新功能的扩展。</p>
+</li>
+<li><p>开销小</p>
+<p> 和编译工作相比，Driver的工作量并不大，但是也要遵循一些基本的规则来保持它的高效。</p>
+<ul>
+<li>尽可能避免内存分配和字符串拷贝</li>
+<li>不要多次解析参数</li>
+<li>提供一些简单的接口来有效地搜索参数</li>
+</ul>
+</li>
+<li><p>简单</p>
+<p> 尽管为了兼容GCC给Driver带来了很多复杂的逻辑，但是整个Driver的设计还是尽可能简单。为了达到这个目的，将Driver分为多个独立的阶段而不是一个大的任务。</p>
+</li>
+</ol>
+<h2 id="设计细节"><a href="#设计细节" class="headerlink" title="设计细节"></a>设计细节</h2><p><img src="/assets/llvm_driver_architecture.png" alt="DriverArchitecture"></p>
+<p> 这是一张来自官网的图，介绍了Driver内部设计的几个阶段。其中，橙色的代表数据，绿色代表操作这些数据的阶段，蓝色的代表辅助组件。</p>
+<ol>
+<li><p>Input Strings</p>
+<p> 这条不用多解释，就是我们调用clang的时候后面传入的标示和数据</p>
+</li>
+<li><p>Parse: Option Parsing</p>
+<p> 这一步就是将我们传入的String类型输入，解析成具体的参数对象，方便后面使用和传递。关于这点，和其他一些命令行工具其实是差不多的，比如<a href="https://github.com/google/python-fire" target="_blank" rel="noopener">python-fire</a> 和 <a href="https://github.com/CocoaPods/CLAide" target="_blank" rel="noopener">CLAide</a>。具体解析细节我们后面再介绍，如果像看大概的解析过程，使用<code>-###</code> 就可以。</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ clang -<span class="comment">### -Xarch_i386 -fomit-frame-pointer -Wa,-fast -Ifoo -I foo t.c</span></span><br><span class="line"></span><br><span class="line">Option 0 - Name: <span class="string">"-Xarch_"</span>, Values: &#123;<span class="string">"i386"</span>, <span class="string">"-fomit-frame-pointer"</span>&#125;</span><br><span class="line">Option 1 - Name: <span class="string">"-Wa,"</span>, Values: &#123;<span class="string">"-fast"</span>&#125;</span><br><span class="line">Option 2 - Name: <span class="string">"-I"</span>, Values: &#123;<span class="string">"foo"</span>&#125;</span><br><span class="line">Option 3 - Name: <span class="string">"-I"</span>, Values: &#123;<span class="string">"foo"</span>&#125;</span><br><span class="line">Option 4 - Name: <span class="string">"&lt;input&gt;"</span>, Values: &#123;<span class="string">"t.c"</span>&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Pipeline: Compilation Action Construction</p>
+<p> 一旦解析了参数，就会构造出后续编译所需要的子任务。这涉及到确定输入文件及其类型，要对它们做哪些工作（预处理、编译、组装、链接等），以及为每个任务构造一个Action实例列表。其结果是一个由一个或多个顶层Action组成的列表，每个Action通常对应一个单一的输出（例如，一个对象或链接的可执行文件）。</p>
+<p> 使用<code>-ccc-print-phases</code> 可以打印出这个阶段的内容：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ clang -ccc-print-phases -x c t.c -x assembler t.s</span><br><span class="line">0: input, <span class="string">"t.c"</span>, c</span><br><span class="line">1: preprocessor, &#123;0&#125;, cpp-output</span><br><span class="line">2: compiler, &#123;1&#125;, assembler</span><br><span class="line">3: assembler, &#123;2&#125;, object</span><br><span class="line">4: input, <span class="string">"t.s"</span>, assembler</span><br><span class="line">5: assembler, &#123;4&#125;, object</span><br><span class="line">6: linker, &#123;3, 5&#125;, image</span><br></pre></td></tr></table></figure>
+<p> 当这个阶段完成之后，编译过程将会以被分成多个小的Action，每个Action的阶段就是我们熟知的”预处理→编译→汇编→连接”等。</p>
+</li>
+<li><p>Bind: Tool &amp; Filename Selection</p>
+<p> 这个阶段和后面的Trasnlate一起将将Actions转化成真正的进程。Driver自上而下匹配，将Actioins分配给分配给Tools，ToolChain负责为每个Action选择合适的Tool，一旦选择了Tool，Driver就会与Tool交互，看它是否能够匹配更多的Action。</p>
+<p> 一旦所有的Action都选择了Tool，Driver就会决定如何连接工具（例如，使用进程内模块、管道、临时文件或用户提供的文件名）。</p>
+<p> Driver驱动程序与ToolChain交互，以执行Tool的绑定。ToolChain包含了特定架构、平台和操作系统编译所需的所有工具的信息，一次编译过程中，单个Driver调用可能会查询多个ToolChain，以便与不同架构的工具进行交互。</p>
+<p> 可以通过<code>-ccc-print-bindings</code> 可以查看Bind的大致情况，以下展示了在i386和ppc上编译t0.c文件Bing过程。</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ clang -ccc-print-bindings -arch i386 -arch ppc t0.c</span><br><span class="line"><span class="comment"># "i386-apple-darwin9" - "clang", inputs: ["t0.c"], output: "/tmp/cc-Sn4RKF.s"</span></span><br><span class="line"><span class="comment"># "i386-apple-darwin9" - "darwin::Assemble", inputs: ["/tmp/cc-Sn4RKF.s"], output: "/tmp/cc-gvSnbS.o"</span></span><br><span class="line"><span class="comment"># "i386-apple-darwin9" - "darwin::Link", inputs: ["/tmp/cc-gvSnbS.o"], output: "/tmp/cc-jgHQxi.out"</span></span><br><span class="line"><span class="comment"># "ppc-apple-darwin9" - "gcc::Compile", inputs: ["t0.c"], output: "/tmp/cc-Q0bTox.s"</span></span><br><span class="line"><span class="comment"># "ppc-apple-darwin9" - "gcc::Assemble", inputs: ["/tmp/cc-Q0bTox.s"], output: "/tmp/cc-WCdicw.o"</span></span><br><span class="line"><span class="comment"># "ppc-apple-darwin9" - "gcc::Link", inputs: ["/tmp/cc-WCdicw.o"], output: "/tmp/cc-HHBEBh.out"</span></span><br><span class="line"><span class="comment"># "i386-apple-darwin9" - "darwin::Lipo", inputs: ["/tmp/cc-jgHQxi.out", "/tmp/cc-HHBEBh.out"], output: "a.out"</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Translate: Tool Specific Argument Translation</p>
+<p> 一旦选择了一个Tool来执行一个特定的Action，该Tool必须构建具体的Commands，并在编译过程中执行。该阶段主要的工作是将gcc风格的命令行选项翻译成子进程所期望的任何选项。</p>
+<p> 这个阶段的结果是一些列将要执行Commands（包含执行路径和参数字符）。</p>
+</li>
+<li><p>Execute</p>
+<p> 执行阶段，之前上一阶段输出的命令，并且产出结果。</p>
+</li>
+</ol>
+<hr>
+<p>以上关于Driver的设计都可以在LLVM的官网能找到，可能很多介绍比较抽象，下面我介绍下更多的代码相关的细节。</p>
+<h1 id="Driver的代码分析"><a href="#Driver的代码分析" class="headerlink" title="Driver的代码分析"></a>Driver的代码分析</h1><h2 id="入口"><a href="#入口" class="headerlink" title="入口"></a>入口</h2><p>在<code>clang/tools/driver/driver.cpp</code> 我们可以找到Driver的入口，其中入口逻辑都集中在main之中。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc_, <span class="keyword">const</span> <span class="keyword">char</span> **argv_)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 初始化LLVM</span></span><br><span class="line">  <span class="comment">// 1. 设置信号handler，当进程崩溃是可以打印堆栈 2. 处理windows上的参数编码，保证参数传递进去的是utf-8</span></span><br><span class="line">  llvm::<span class="function">InitLLVM <span class="title">X</span><span class="params">(argc_, argv_)</span></span>;</span><br><span class="line">  SmallVector&lt;<span class="keyword">const</span> <span class="keyword">char</span> *, <span class="number">256</span>&gt; argv(argv_, argv_ + argc_);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 保证标准文件描述符(input, output, error)的正确映射</span></span><br><span class="line">  <span class="keyword">if</span> (llvm::sys::Process::FixupStandardFileDescriptors())</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">  <span class="comment">// 初始化LLVM支持的所有目标机器，比如arm，x86等</span></span><br><span class="line">  llvm::InitializeAllTargets();</span><br><span class="line">  <span class="comment">// 根据传入参数，解析出需要的:</span></span><br><span class="line">  <span class="comment">// TargetPrefix： i686-linux-android</span></span><br><span class="line">  <span class="comment">// ModeSuffix： g++，gcc，cpp等</span></span><br><span class="line">  <span class="comment">// DriverMode：--driver-mode=g++ 或者--driver-mode=gcc等</span></span><br><span class="line">  <span class="keyword">auto</span> TargetAndMode = ToolChain::getTargetAndModeFromProgramName(argv[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 省略...</span></span><br><span class="line"></span><br><span class="line">  <span class="function">Driver <span class="title">TheDriver</span><span class="params">(Path, llvm::sys::getDefaultTargetTriple(), Diags)</span></span>;</span><br><span class="line">  <span class="comment">// 设置clang所在目录</span></span><br><span class="line">  SetInstallDir(argv, TheDriver, CanonicalPrefixes);</span><br><span class="line">  <span class="comment">// 用之前的targe和mode赋值</span></span><br><span class="line">  TheDriver.setTargetAndMode(TargetAndMode);</span><br><span class="line">  <span class="comment">// 将target和mode信息插入到argv中</span></span><br><span class="line">  insertTargetAndModeArgs(TargetAndMode, argv, SavedStrings);</span><br><span class="line">  <span class="comment">// 设置默认的CC_PRINT_OPTIONS/CC_PRINT_HEADERS/CC_LOG_DIAGNOSTICS输出文件，会在环境变量中指定</span></span><br><span class="line">  SetBackdoorDriverOutputsFromEnvVars(TheDriver);</span><br><span class="line">  <span class="comment">// 返回Compilation对象，包含一个driver调用的一系列任务</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">unique_ptr</span>&lt;Compilation&gt; C(TheDriver.BuildCompilation(argv));</span><br><span class="line">  <span class="keyword">int</span> Res = <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">if</span> (C &amp;&amp; !C-&gt;containsError()) &#123;</span><br><span class="line">    SmallVector&lt;<span class="built_in">std</span>::pair&lt;<span class="keyword">int</span>, <span class="keyword">const</span> Command *&gt;, <span class="number">4</span>&gt; FailingCommands;</span><br><span class="line">    <span class="comment">// 根据参数列表执行编译动作并且返回正确的返回码</span></span><br><span class="line">    Res = TheDriver.ExecuteCompilation(*C, FailingCommands);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 省略...</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 省略...</span></span><br><span class="line">  <span class="keyword">return</span> Res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，<code>driver.cpp</code> 中大致做了几件事情：</p>
+<ol>
+<li>做些环境的检测和各自对象数据的准备</li>
+<li>解析参数中target，mode信息</li>
+<li>初始化<code>Driver</code>对象，并对其赋值target，mode等等需要的数据</li>
+<li>通过<code>Driver</code>对象生成<code>Compilation</code>对象并且执行编译命令</li>
+</ol>
+<h2 id="BuildCompilation-amp-ExecuteCompilation"><a href="#BuildCompilation-amp-ExecuteCompilation" class="headerlink" title="BuildCompilation&amp;ExecuteCompilation"></a>BuildCompilation&amp;ExecuteCompilation</h2><p>上面<code>driver.cpp</code> 中很重要的一步是<code>BuildCompilation</code>，这一步做了很多事情，我们看下代码。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line">Compilation *Driver::BuildCompilation(ArrayRef&lt;<span class="keyword">const</span> <span class="keyword">char</span> *&gt; ArgList) &#123;</span><br><span class="line">  <span class="comment">//省略..</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">// Parse参数</span></span><br><span class="line">  <span class="keyword">bool</span> ContainsError;</span><br><span class="line">  CLOptions = llvm::make_unique&lt;InputArgList&gt;(</span><br><span class="line">      ParseArgStrings(ArgList.slice(<span class="number">1</span>), IsCLMode(), ContainsError));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果有来自文件的配置，从文件中加载配置参数</span></span><br><span class="line">  <span class="comment">// 会解析来自command line指定的.cfg或者在用户+系统指定的Search Path中找</span></span><br><span class="line">  <span class="keyword">if</span> (!ContainsError)</span><br><span class="line">    ContainsError = loadConfigFile();</span><br><span class="line">  <span class="keyword">bool</span> HasConfigFile = !ContainsError &amp;&amp; (CfgOptions.get() != <span class="literal">nullptr</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 合并来自commnad line的参数和来自配置文件的配置</span></span><br><span class="line">  InputArgList Args = <span class="built_in">std</span>::move(HasConfigFile ? <span class="built_in">std</span>::move(*CfgOptions)</span><br><span class="line">                                              : <span class="built_in">std</span>::move(*CLOptions));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 省略合并过程，最终合并得到Args</span></span><br><span class="line">  <span class="comment">// 省略各种参数赋值和处理...</span></span><br><span class="line"></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">unique_ptr</span>&lt;llvm::opt::InputArgList&gt; UArgs =</span><br><span class="line">      llvm::make_unique&lt;InputArgList&gt;(<span class="built_in">std</span>::move(Args));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Translate</span></span><br><span class="line">  DerivedArgList *TranslatedArgs = TranslateInputArgs(*UArgs);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 构造ToolChain</span></span><br><span class="line">  <span class="keyword">const</span> ToolChain &amp;TC = getToolChain(</span><br><span class="line">      *UArgs, computeTargetTriple(*<span class="keyword">this</span>, TargetTriple, *UArgs));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 将trasnlate结束的参数传递给Compilation</span></span><br><span class="line">  Compilation *C = <span class="keyword">new</span> Compilation(*<span class="keyword">this</span>, TC, UArgs.release(), TranslatedArgs,</span><br><span class="line">                                   ContainsError);</span><br><span class="line">  <span class="comment">// 处理一些立即处理和退出的命令，比如-help，-version这种</span></span><br><span class="line">  <span class="keyword">if</span> (!HandleImmediateArgs(*C))</span><br><span class="line">    <span class="keyword">return</span> C;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Construct the list of inputs.</span></span><br><span class="line">  InputList Inputs;</span><br><span class="line">  BuildInputs(C-&gt;getDefaultToolChain(), *TranslatedArgs, Inputs);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Populate the tool chains for the offloading devices, if any.</span></span><br><span class="line">  CreateOffloadingDeviceToolChains(*C, Inputs);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 构造Actions</span></span><br><span class="line">  <span class="keyword">if</span> (TC.getTriple().isOSBinFormatMachO())</span><br><span class="line">    BuildUniversalActions(*C, C-&gt;getDefaultToolChain(), Inputs);</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    BuildActions(*C, C-&gt;getArgs(), Inputs, C-&gt;getActions());</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 来自ccc-print-phases </span></span><br><span class="line">  <span class="keyword">if</span> (CCCPrintPhases) &#123;</span><br><span class="line">    PrintActions(*C);</span><br><span class="line">    <span class="keyword">return</span> C;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 构造Jobs</span></span><br><span class="line">  BuildJobs(*C);</span><br><span class="line">  <span class="keyword">return</span> C;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过省略干扰我们理解的其他代码，可以发现，<code>BuildCompilation</code>主要做了以下几件事情：</p>
+<ol>
+<li>解析参数</li>
+<li>翻译参数</li>
+<li>构造Actions和Jobs</li>
+</ol>
+<p>基本和官方设计所提到的几个流程能对应上，同时我们也能看到之前提到的<code>ccc-print-phases</code> 是在这里处理Actions的打印。</p>
+<p>而<code>ExecuteCompilation</code>的则比较简单，就是我们之前设计图中最后的执行步骤。同时也能看到为什么我们输入<code>-###</code> 能够打印出Jobs的信息。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> Driver::ExecuteCompilation(</span><br><span class="line">    Compilation &amp;C,</span><br><span class="line">    SmallVectorImpl&lt;<span class="built_in">std</span>::pair&lt;<span class="keyword">int</span>, <span class="keyword">const</span> Command *&gt;&gt; &amp;FailingCommands) &#123;</span><br><span class="line">  <span class="comment">// 处理-###的参数</span></span><br><span class="line">  <span class="keyword">if</span> (C.getArgs().hasArg(options::OPT__HASH_HASH_HASH)) &#123;</span><br><span class="line">    C.getJobs().Print(llvm::errs(), <span class="string">"\n"</span>, <span class="literal">true</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 省略...</span></span><br><span class="line">  C.ExecuteJobs(C.getJobs(), FailingCommands);</span><br><span class="line">  <span class="comment">// 省略...处理失败已经打印一些额外的数据</span></span><br><span class="line">  <span class="keyword">return</span> Res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Parse"><a href="#Parse" class="headerlink" title="Parse"></a>Parse</h2><p>我们根据上面<code>BuildCompilation</code> 中的步骤，来看看Parse这一步是怎么实现的。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">InputArgList Driver::ParseArgStrings(ArrayRef&lt;<span class="keyword">const</span> <span class="keyword">char</span> *&gt; ArgStrings,</span><br><span class="line">                                     <span class="keyword">bool</span> IsClCompatMode,</span><br><span class="line">                                     <span class="keyword">bool</span> &amp;ContainsError) &#123;</span><br><span class="line">  <span class="comment">// 省略...</span></span><br><span class="line">  InputArgList Args =</span><br><span class="line">      getOpts().ParseArgs(ArgStrings, MissingArgIndex, MissingArgCount,</span><br><span class="line">                          IncludedFlagsBitmask, ExcludedFlagsBitmask);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 省略各种校验和错误处理等...</span></span><br><span class="line">  <span class="keyword">return</span> Args;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">InputArgList OptTable::ParseArgs(ArrayRef&lt;<span class="keyword">const</span> <span class="keyword">char</span> *&gt; ArgArr,</span><br><span class="line">                                 <span class="keyword">unsigned</span> &amp;MissingArgIndex,</span><br><span class="line">                                 <span class="keyword">unsigned</span> &amp;MissingArgCount,</span><br><span class="line">                                 <span class="keyword">unsigned</span> FlagsToInclude,</span><br><span class="line">                                 <span class="keyword">unsigned</span> FlagsToExclude) <span class="keyword">const</span> &#123;</span><br><span class="line">  <span class="function">InputArgList <span class="title">Args</span><span class="params">(ArgArr.begin(), ArgArr.end())</span></span>;</span><br><span class="line"></span><br><span class="line">  MissingArgIndex = MissingArgCount = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">unsigned</span> Index = <span class="number">0</span>, End = ArgArr.size();</span><br><span class="line">  <span class="keyword">while</span> (Index &lt; End) &#123;</span><br><span class="line">    <span class="comment">// 省略nullptr和空字符串等处理...</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> Prev = Index;</span><br><span class="line">    Arg *A = ParseOneArg(Args, Index, FlagsToInclude, FlagsToExclude);</span><br><span class="line">    assert(Index &gt; Prev &amp;&amp; <span class="string">"Parser failed to consume argument."</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 省略错误校验...</span></span><br><span class="line"></span><br><span class="line">    Args.append(A);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> Args;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Arg *OptTable::ParseOneArg(<span class="keyword">const</span> ArgList &amp;Args, <span class="keyword">unsigned</span> &amp;Index,</span><br><span class="line">                           <span class="keyword">unsigned</span> FlagsToInclude,</span><br><span class="line">                           <span class="keyword">unsigned</span> FlagsToExclude) <span class="keyword">const</span> &#123;</span><br><span class="line">  <span class="keyword">unsigned</span> Prev = Index;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span> *Str = Args.getArgString(Index);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 省略...</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> Info *Start = OptionInfos.data() + FirstSearchableIndex;</span><br><span class="line">  <span class="keyword">const</span> Info *End = OptionInfos.data() + OptionInfos.size();</span><br><span class="line">  StringRef Name = StringRef(Str).ltrim(PrefixChars);</span><br><span class="line"></span><br><span class="line">  Start = <span class="built_in">std</span>::lower_bound(Start, End, Name.data());</span><br><span class="line">  <span class="keyword">for</span> (; Start != End; ++Start) &#123;</span><br><span class="line">    <span class="keyword">unsigned</span> ArgSize = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 省略...</span></span><br><span class="line">    <span class="function">Option <span class="title">Opt</span><span class="params">(Start, <span class="keyword">this</span>)</span></span>;</span><br><span class="line">    <span class="comment">// 省略...</span></span><br><span class="line">    <span class="keyword">if</span> (Arg *A = Opt.accept(Args, Index, ArgSize))</span><br><span class="line">      <span class="keyword">return</span> A;</span><br><span class="line">    <span class="comment">// 省略...</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 保底</span></span><br><span class="line">  <span class="keyword">if</span> (Str[<span class="number">0</span>] == <span class="string">'/'</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> Arg(getOption(TheInputOptionID), Str, Index++, Str);</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> Arg(getOption(TheUnknownOptionID), Str, Index++, Str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面有些代码只是简单封装，主要流程就是从参数String中逐个解析生成<code>Arg</code> 对象，最后组成<code>InputArgList</code> 。<code>Opt.accept</code> 逻辑我们在这里就不说了，其实就是根据不同类型的参数解析然后返回，我们重点说下<code>Option</code> ，因为<code>Opt.accept</code> 处理的核心需要依赖<code>Option</code> 对象。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Option(<span class="keyword">const</span> OptTable::Info *Info, <span class="keyword">const</span> OptTable *Owner);</span><br></pre></td></tr></table></figure>
+<p><code>Option</code>的生成需要<code>OptTable::Info</code>和<code>OptTable</code>两个参数，通过跟踪代码，我们可以在<code>Driver</code>的构造函数中找到<code>OptTable</code>的生成。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::<span class="built_in">unique_ptr</span>&lt;OptTable&gt; clang::driver::createDriverOptTable() &#123;</span><br><span class="line">  <span class="keyword">auto</span> Result = llvm::make_unique&lt;DriverOptTable&gt;();</span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">std</span>::move(Result);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DriverOptTable</span> :</span> <span class="keyword">public</span> OptTable &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  DriverOptTable()</span><br><span class="line">    : OptTable(InfoTable) &#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> OptTable::Info InfoTable[] = &#123;</span><br><span class="line">#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \</span><br><span class="line">               HELPTEXT, METAVAR, VALUES)                                      \</span><br><span class="line">  &#123;PREFIX, NAME,  HELPTEXT,    METAVAR,     OPT_##ID,  Option::KIND##Class,    \</span><br><span class="line">   PARAM,  FLAGS, OPT_##GROUP, OPT_##ALIAS, ALIASARGS, VALUES&#125;,</span><br><span class="line">#include <span class="string">"clang/Driver/Options.inc"</span></span><br><span class="line">#undef OPTION</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>可以看到，<code>OptTable</code>的生成是依靠预先定义好的<code>InfoTable[]</code> 来生成的。这里以宏的形式定了一个Option应该包含哪些属性，同时引入了<code>Options.inc</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> OPTION</span></span><br><span class="line">OPTION(prefix_1, <span class="string">"###"</span>, _HASH_HASH_HASH, Flag, INVALID, INVALID, <span class="literal">nullptr</span>, DriverOption | CoreOption, <span class="number">0</span>,</span><br><span class="line">       <span class="string">"Print (but do not run) the commands to run for this compilation"</span>, <span class="literal">nullptr</span>, <span class="literal">nullptr</span>)</span><br><span class="line">OPTION(prefix_1, <span class="string">"ast-dump"</span>, ast_dump, Flag, Action_Group, INVALID, <span class="literal">nullptr</span>, CC1Option | NoDriverOption, <span class="number">0</span>,</span><br><span class="line">       <span class="string">"Build ASTs and then debug dump them"</span>, <span class="literal">nullptr</span>, <span class="literal">nullptr</span>)</span><br><span class="line">OPTION(prefix_1, <span class="string">"ccc-print-phases"</span>, ccc_print_phases, Flag, internal_debug_Group, INVALID, <span class="literal">nullptr</span>, DriverOption | HelpHidden | CoreOption, <span class="number">0</span>,</span><br><span class="line">       <span class="string">"Dump list of actions to perform"</span>, <span class="literal">nullptr</span>, <span class="literal">nullptr</span>)</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">// OPTION</span></span></span><br></pre></td></tr></table></figure>
+<p>我这里截取了几个定义，都是我们比较熟悉和常见的，我们支持的每个命令都能在这里找到定义。</p>
+<h2 id="Actions"><a href="#Actions" class="headerlink" title="Actions"></a>Actions</h2><p>因为<code>BuildUniversalActions</code>最终会调用<code>BuildActions</code>，所以我们来看看<code>BuildActions</code>的处理逻辑。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> Driver::BuildActions(Compilation &amp;C, DerivedArgList &amp;Args,</span><br><span class="line">                          <span class="keyword">const</span> InputList &amp;Inputs, ActionList &amp;Actions) <span class="keyword">const</span> &#123;</span><br><span class="line">  <span class="comment">// 省略...</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 找到Final Phase</span></span><br><span class="line">  Arg *FinalPhaseArg;</span><br><span class="line">  phases::ID FinalPhase = getFinalPhase(Args, &amp;FinalPhaseArg);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 省略根据FinalPhase等信息构造Actions...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">phases::ID Driver::getFinalPhase(<span class="keyword">const</span> DerivedArgList &amp;DAL,</span><br><span class="line">                                 Arg **FinalPhaseArg) <span class="keyword">const</span> &#123;</span><br><span class="line">  Arg *PhaseArg = <span class="literal">nullptr</span>;</span><br><span class="line">  phases::ID FinalPhase;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// -&#123;E,EP,P,M,MM&#125; only run the preprocessor.</span></span><br><span class="line">  <span class="keyword">if</span> (CCCIsCPP() || (PhaseArg = DAL.getLastArg(options::OPT_E)) ||</span><br><span class="line">      (PhaseArg = DAL.getLastArg(options::OPT__SLASH_EP)) ||</span><br><span class="line">      (PhaseArg = DAL.getLastArg(options::OPT_M, options::OPT_MM)) ||</span><br><span class="line">      (PhaseArg = DAL.getLastArg(options::OPT__SLASH_P))) &#123;</span><br><span class="line">    FinalPhase = phases::Preprocess;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// --precompile only runs up to precompilation.</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> ((PhaseArg = DAL.getLastArg(options::OPT__precompile))) &#123;</span><br><span class="line">    FinalPhase = phases::Precompile;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// -&#123;fsyntax-only,-analyze,emit-ast&#125; only run up to the compiler.</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> ((PhaseArg = DAL.getLastArg(options::OPT_fsyntax_only)) ||</span><br><span class="line">             (PhaseArg = DAL.getLastArg(options::OPT_module_file_info)) ||</span><br><span class="line">             (PhaseArg = DAL.getLastArg(options::OPT_verify_pch)) ||</span><br><span class="line">             (PhaseArg = DAL.getLastArg(options::OPT_rewrite_objc)) ||</span><br><span class="line">             (PhaseArg = DAL.getLastArg(options::OPT_rewrite_legacy_objc)) ||</span><br><span class="line">             (PhaseArg = DAL.getLastArg(options::OPT__migrate)) ||</span><br><span class="line">             (PhaseArg = DAL.getLastArg(options::OPT__analyze,</span><br><span class="line">                                        options::OPT__analyze_auto)) ||</span><br><span class="line">             (PhaseArg = DAL.getLastArg(options::OPT_emit_ast))) &#123;</span><br><span class="line">    FinalPhase = phases::Compile;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// -S only runs up to the backend.</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> ((PhaseArg = DAL.getLastArg(options::OPT_S))) &#123;</span><br><span class="line">    FinalPhase = phases::Backend;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// -c compilation only runs up to the assembler.</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> ((PhaseArg = DAL.getLastArg(options::OPT_c))) &#123;</span><br><span class="line">    FinalPhase = phases::Assemble;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Otherwise do everything.</span></span><br><span class="line">  &#125; <span class="keyword">else</span></span><br><span class="line">    FinalPhase = phases::Link;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (FinalPhaseArg)</span><br><span class="line">    *FinalPhaseArg = PhaseArg;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> FinalPhase;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，不同的参数决定了我们这一次过程的最后阶段不一样，比如如果我们参数列表里带了<code>-fsyntax-only</code> ，那我们最后久之后走到编译这一步，后面的汇编，链接等阶段是不会涉及的。</p>
+<h2 id="Bind"><a href="#Bind" class="headerlink" title="Bind"></a>Bind</h2><p>在执行编译的过程中，Bind会为不同的Action选定不同的Tool。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">InputInfo Driver::BuildJobsForActionNoCache(</span><br><span class="line">    Compilation &amp;C, <span class="keyword">const</span> Action *A, <span class="keyword">const</span> ToolChain *TC, StringRef BoundArch,</span><br><span class="line">    <span class="keyword">bool</span> AtTopLevel, <span class="keyword">bool</span> MultipleArchs, <span class="keyword">const</span> <span class="keyword">char</span> *LinkingOutput,</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">map</span>&lt;<span class="built_in">std</span>::pair&lt;<span class="keyword">const</span> Action *, <span class="built_in">std</span>::<span class="built_in">string</span>&gt;, InputInfo&gt; &amp;CachedResults,</span><br><span class="line">    Action::OffloadKind TargetDeviceOffloadKind) <span class="keyword">const</span> &#123;</span><br><span class="line"><span class="comment">//...</span></span><br><span class="line">	<span class="function">ToolSelector <span class="title">TS</span><span class="params">(JA, *TC, C, isSaveTempsEnabled(),</span></span></span><br><span class="line"><span class="function"><span class="params">                  embedBitcodeInObject() &amp;&amp; !isUsingLTO())</span></span>;</span><br><span class="line">  <span class="keyword">const</span> Tool *T = TS.getTool(Inputs, CollapsedOffloadActions);</span><br><span class="line"><span class="comment">//...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">const</span> Tool *<span class="title">getTool</span><span class="params">(ActionList &amp;Inputs,</span></span></span><br><span class="line"><span class="function"><span class="params">                      ActionList &amp;CollapsedOffloadAction)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 省略</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> Tool *T = combineAssembleBackendCompile(ActionChain, Inputs,</span><br><span class="line">                                                  CollapsedOffloadAction);</span><br><span class="line">    <span class="keyword">if</span> (!T)</span><br><span class="line">      T = combineAssembleBackend(ActionChain, Inputs, CollapsedOffloadAction);</span><br><span class="line">    <span class="keyword">if</span> (!T)</span><br><span class="line">      T = combineBackendCompile(ActionChain, Inputs, CollapsedOffloadAction);</span><br><span class="line">    <span class="keyword">if</span> (!T) &#123;</span><br><span class="line">      Inputs = BaseAction-&gt;getInputs();</span><br><span class="line">      T = TC.SelectTool(*BaseAction);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    combineWithPreprocessor(T, Inputs, CollapsedOffloadAction);</span><br><span class="line">    <span class="keyword">return</span> T;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，Bind会尝试去绑定不同的Tool，BackCompile/Backend/Compile/Preprocessor等。</p>
+<h2 id="Jobs"><a href="#Jobs" class="headerlink" title="Jobs"></a>Jobs</h2><p>有了前面的参数，Actions，ToolChain等，Job的构建就水到渠成，具体代码可以在下面找到。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> Driver::BuildJobs(Compilation &amp;C) <span class="keyword">const</span> &#123;</span><br><span class="line">  <span class="comment">//...</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">map</span>&lt;<span class="built_in">std</span>::pair&lt;<span class="keyword">const</span> Action *, <span class="built_in">std</span>::<span class="built_in">string</span>&gt;, InputInfo&gt; CachedResults;</span><br><span class="line">  <span class="keyword">for</span> (Action *A : C.getActions()) &#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *LinkingOutput = <span class="literal">nullptr</span>;</span><br><span class="line">    <span class="keyword">if</span> (isa&lt;LipoJobAction&gt;(A)) &#123;</span><br><span class="line">      <span class="keyword">if</span> (FinalOutput)</span><br><span class="line">        LinkingOutput = FinalOutput-&gt;getValue();</span><br><span class="line">      <span class="keyword">else</span></span><br><span class="line">        LinkingOutput = getDefaultImageName();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    BuildJobsForAction(C, A, &amp;C.getDefaultToolChain(),</span><br><span class="line">                       <span class="comment">/*BoundArch*/</span> StringRef(),</span><br><span class="line">                       <span class="comment">/*AtTopLevel*/</span> <span class="literal">true</span>,</span><br><span class="line">                       <span class="comment">/*MultipleArchs*/</span> ArchNames.size() &gt; <span class="number">1</span>,</span><br><span class="line">                       <span class="comment">/*LinkingOutput*/</span> LinkingOutput, CachedResults,</span><br><span class="line">                       <span class="comment">/*TargetDeviceOffloadKind*/</span> Action::OFK_None);</span><br><span class="line">  &#125;</span><br><span class="line">	<span class="comment">//...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Execute"><a href="#Execute" class="headerlink" title="Execute"></a>Execute</h2><p>执行的逻辑其实就是在Jobs准备之后，根据相关信息执行相关的命令。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> Driver::ExecuteCompilation(</span><br><span class="line">    Compilation &amp;C,</span><br><span class="line">    SmallVectorImpl&lt;<span class="built_in">std</span>::pair&lt;<span class="keyword">int</span>, <span class="keyword">const</span> Command *&gt;&gt; &amp;FailingCommands) &#123;</span><br><span class="line">  <span class="comment">// 省略...</span></span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">auto</span> &amp;Job : C.getJobs())</span><br><span class="line">    setUpResponseFiles(C, Job);</span><br><span class="line"></span><br><span class="line">  C.ExecuteJobs(C.getJobs(), FailingCommands);</span><br><span class="line">	<span class="comment">// 省略</span></span><br><span class="line">  </span><br><span class="line">  <span class="keyword">return</span> Res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们也可以通过<code>-ftime-report</code> 来查看执行的过程和时间。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>虽然Driver这一层还没有涉及到真正的编译，但是作为整个编译过程的驱动，了解Driver对我们后续了解编译的全过程还是有帮助的，特别是Driver的设计，以pipline形式将各个环节的输入输出抽象，解决了参数解析和翻译，任务封装和执行等过程，以满足我们各种各样的使用需求。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/clang/" rel="tag"># clang</a>
+          
+            <a href="/tags/LLVM/" rel="tag"># LLVM</a>
+          
+            <a href="/tags/Driver/" rel="tag"># Driver</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/05/16/ios-explore-test/" rel="next" title="闲话iOS探索测试实现">
+                <i class="fa fa-chevron-left"></i> 闲话iOS探索测试实现
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.jpeg" alt="shanks">
+            
+              <p class="site-author-name" itemprop="name">shanks</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/shanksguo" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:gyjjone@163.com" target="_blank" title="Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/gyjShanks" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.facebook.com/gyj.shanks" target="_blank" title="FB">
+                      
+                        <i class="fa fa-fw fa-facebook"></i></a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#什么是Driver"><span class="nav-number">1.</span> <span class="nav-text">什么是Driver</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Driver怎么设计"><span class="nav-number">2.</span> <span class="nav-text">Driver怎么设计</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#特点和目标"><span class="nav-number">2.1.</span> <span class="nav-text">特点和目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设计细节"><span class="nav-number">2.2.</span> <span class="nav-text">设计细节</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Driver的代码分析"><span class="nav-number">3.</span> <span class="nav-text">Driver的代码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#入口"><span class="nav-number">3.1.</span> <span class="nav-text">入口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BuildCompilation-amp-ExecuteCompilation"><span class="nav-number">3.2.</span> <span class="nav-text">BuildCompilation&amp;ExecuteCompilation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Parse"><span class="nav-number">3.3.</span> <span class="nav-text">Parse</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Actions"><span class="nav-number">3.4.</span> <span class="nav-text">Actions</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Bind"><span class="nav-number">3.5.</span> <span class="nav-text">Bind</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jobs"><span class="nav-number">3.6.</span> <span class="nav-text">Jobs</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Execute"><span class="nav-number">3.7.</span> <span class="nav-text">Execute</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#小结"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shanks</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
