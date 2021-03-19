@@ -260,6 +260,168 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="www.shanks.pro/2021/03/19/ios-app-size-optimization/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="shanks">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="香克斯">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2021/03/19/ios-app-size-optimization/" itemprop="url">iOS App Size Optimization</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2021-03-19T17:46:00+08:00">
+                2021-03-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/iOS/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>通过一份Google的数据，下载大小和转换率有关系[<a href="https://medium.com/googleplaydev/shrinking-apks-growing-installs-5d3fcba23ce2" target="_blank" rel="noopener">参考</a>]。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">For every <span class="number">6</span> MB increase to an APK’s size, we see a decrease in the install conversion rate of <span class="number">1</span>%.</span><br></pre></td></tr></table></figure>
+<h1 id="前提"><a href="#前提" class="headerlink" title="前提"></a>前提</h1><p>要想优化包大小，了解包的构成是前提。对于iOS的App来说，直接下载ipa，解压开就能看到包的构成。</p>
+<ul>
+<li>二进制代码</li>
+<li>资源bundle - 独立bundle管理 .bundle格式</li>
+<li>Frameworks - 动态库，12.2以下可能会包含swift动态库，12.2及以上则只要依赖的动态库</li>
+<li>Plugins - 如果App有Extension等功能，则会有这部分</li>
+<li>翻译 - 可能是在main bundle中，也可能是在独立bundle中，以strings文件呈现</li>
+<li>散落在main bundle的各种其他资源（没有用独立bundle管理）</li>
+</ul>
+<p>通过这里可以看出，按照类型分，包的组成大致是以下几类：</p>
+<ul>
+<li>代码 - 二进制+Pluigns中的代码+Frameworks中的动态库</li>
+<li>资源：图片/json/db/mp3等等资源</li>
+<li>翻译：strings文件（其实可以算资源一种，单独列出来是因为我们的这部分比较大）</li>
+</ul>
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2021/03/19/ios-app-size-optimization/#more" rel="contents">
+              Read more &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="www.shanks.pro/2020/11/15/ios_crash/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1612,7 +1774,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-count">9</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1634,7 +1796,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-count">24</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
@@ -1706,7 +1868,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
