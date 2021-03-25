@@ -81,13 +81,13 @@
 
 
 
-<meta name="description" content="Crash是什么Crash其实就是当有些操作不被系统或者软件允许时，通过一些信号或者异常让进程中止的现象。当然，在收到信号或者异常时，也可以选择不处理让进程继续运行，但是一般不会这样做，因为后可能导致一些不可预知的后果。在OSX&amp;amp;iOS中，Crash一般由以下两种信号产生。 Hardware-Generated Signals硬件层面的信号（比如常见的野指针）最早是来自处理器的traps，">
+<meta name="description" content="Crash是什么Crash其实就是当有些操作不被系统或者软件允许时，通过一些信号或者异常让进程中止的现象。当然，在收到信号或者异常时，也可以选择不处理让进程继续运行，但是一般不会这样做，因为后可能导致一些不可预知的后果。在OSX&amp;amp;iOS中，Crash一般由以下两种信号产生。">
 <meta name="keywords" content="iOS,Crash">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Crash学习笔记">
 <meta property="og:url" content="www.shanks.pro/2020/11/15/ios_crash/index.html">
 <meta property="og:site_name" content="香克斯">
-<meta property="og:description" content="Crash是什么Crash其实就是当有些操作不被系统或者软件允许时，通过一些信号或者异常让进程中止的现象。当然，在收到信号或者异常时，也可以选择不处理让进程继续运行，但是一般不会这样做，因为后可能导致一些不可预知的后果。在OSX&amp;amp;iOS中，Crash一般由以下两种信号产生。 Hardware-Generated Signals硬件层面的信号（比如常见的野指针）最早是来自处理器的traps，">
+<meta property="og:description" content="Crash是什么Crash其实就是当有些操作不被系统或者软件允许时，通过一些信号或者异常让进程中止的现象。当然，在收到信号或者异常时，也可以选择不处理让进程继续运行，但是一般不会这样做，因为后可能导致一些不可预知的后果。在OSX&amp;amp;iOS中，Crash一般由以下两种信号产生。">
 <meta property="og:locale" content="default">
 <meta property="og:image" content="/assets/machtounixsignal.png">
 <meta property="og:image" content="/assets/hardware_exception_process.png">
@@ -98,10 +98,10 @@
 <meta property="og:image" content="/assets/crash_thread_state.png">
 <meta property="og:image" content="/assets/common_exception_subtype.png">
 <meta property="og:image" content="/assets/crash_thread_state2.png">
-<meta property="og:updated_time" content="2020-11-15T09:14:48.335Z">
+<meta property="og:updated_time" content="2021-03-25T07:59:13.732Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Crash学习笔记">
-<meta name="twitter:description" content="Crash是什么Crash其实就是当有些操作不被系统或者软件允许时，通过一些信号或者异常让进程中止的现象。当然，在收到信号或者异常时，也可以选择不处理让进程继续运行，但是一般不会这样做，因为后可能导致一些不可预知的后果。在OSX&amp;amp;iOS中，Crash一般由以下两种信号产生。 Hardware-Generated Signals硬件层面的信号（比如常见的野指针）最早是来自处理器的traps，">
+<meta name="twitter:description" content="Crash是什么Crash其实就是当有些操作不被系统或者软件允许时，通过一些信号或者异常让进程中止的现象。当然，在收到信号或者异常时，也可以选择不处理让进程继续运行，但是一般不会这样做，因为后可能导致一些不可预知的后果。在OSX&amp;amp;iOS中，Crash一般由以下两种信号产生。">
 <meta name="twitter:image" content="/assets/machtounixsignal.png">
 
 
@@ -364,6 +364,7 @@
 
       
         <h2 id="Crash是什么"><a href="#Crash是什么" class="headerlink" title="Crash是什么"></a>Crash是什么</h2><p>Crash其实就是当有些操作不被系统或者软件允许时，通过一些信号或者异常让进程中止的现象。当然，在收到信号或者异常时，也可以选择不处理让进程继续运行，但是一般不会这样做，因为后可能导致一些不可预知的后果。在OSX&amp;iOS中，Crash一般由以下两种信号产生。</p>
+<a id="more"></a>
 <h3 id="Hardware-Generated-Signals"><a href="#Hardware-Generated-Signals" class="headerlink" title="Hardware-Generated Signals"></a>Hardware-Generated Signals</h3><p>硬件层面的信号（比如常见的野指针）最早是来自处理器的traps，然后会被Mach层捕获，从<code>Mach异常</code>转换为<code>Unix信号</code>，转换逻辑见代码(通用Mach和机器相关异常处理)</p>
 <p><img src="/assets/machtounixsignal.png" alt="Mach Exception to Unix Signal"></p>
 <p>转换为Unix信号之后会统一调用<code>threadsignal</code>最终走到<code>act_set_astbsd</code>()。整个流程如下：</p>
