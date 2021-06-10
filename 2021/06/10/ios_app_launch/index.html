@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="iOS,Launch,">
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="香克斯" type="application/atom+xml">
+
+
+
+
+
+
+<meta name="description" content="引言 本文首发于携程技术公众号 干货 | Trip.com APP 启动优化实践本文是个人对启动的一点总结，细节不会披露太多，如需了解更多可私信。  App启动是用户对我们 Trip.com App的第一印象，对于用户体验尤为重要，所以我们花了很多时间在启动时间的优化上。下面我们会先分析App启动的过程，在了解启动流程的基础上制定大的优化原则和小的具体方案，希望对大家有所帮助。">
+<meta name="keywords" content="iOS,Launch">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iOS App Launch Optimization">
+<meta property="og:url" content="www.shanks.pro/2021/06/10/ios_app_launch/index.html">
+<meta property="og:site_name" content="香克斯">
+<meta property="og:description" content="引言 本文首发于携程技术公众号 干货 | Trip.com APP 启动优化实践本文是个人对启动的一点总结，细节不会披露太多，如需了解更多可私信。  App启动是用户对我们 Trip.com App的第一印象，对于用户体验尤为重要，所以我们花了很多时间在启动时间的优化上。下面我们会先分析App启动的过程，在了解启动流程的基础上制定大的优化原则和小的具体方案，希望对大家有所帮助。">
+<meta property="og:locale" content="default">
+<meta property="og:image" content="/assets/app_launch_cycle.png">
+<meta property="og:image" content="/assets/rebase_bind.png">
+<meta property="og:image" content="/assets/ios_launch_serial.png">
+<meta property="og:image" content="/assets/ios_launch_parrel.png">
+<meta property="og:updated_time" content="2021-06-10T04:12:31.486Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="iOS App Launch Optimization">
+<meta name="twitter:description" content="引言 本文首发于携程技术公众号 干货 | Trip.com APP 启动优化实践本文是个人对启动的一点总结，细节不会披露太多，如需了解更多可私信。  App启动是用户对我们 Trip.com App的第一印象，对于用户体验尤为重要，所以我们花了很多时间在启动时间的优化上。下面我们会先分析App启动的过程，在了解启动流程的基础上制定大的优化原则和小的具体方案，希望对大家有所帮助。">
+<meta name="twitter:image" content="/assets/app_launch_cycle.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="www.shanks.pro/2021/06/10/ios_app_launch/">
+
+
+
+
+
+  <title>iOS App Launch Optimization | 香克斯</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-155157853-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">香克斯</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="www.shanks.pro/2021/06/10/ios_app_launch/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="shanks">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="香克斯">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">iOS App Launch Optimization</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2021-06-10T12:00:00+08:00">
+                2021-06-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/iOS/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><blockquote>
+<p>本文首发于携程技术公众号 <a href="https://mp.weixin.qq.com/s/smWjs2X8HWvcvKW_DSXYJA" target="_blank" rel="noopener">干货 | Trip.com APP 启动优化实践</a><br>本文是个人对启动的一点总结，细节不会披露太多，如需了解更多可私信。</p>
+</blockquote>
+<p>App启动是用户对我们 Trip.com App的第一印象，对于用户体验尤为重要，所以我们花了很多时间在启动时间的优化上。<br>下面我们会先分析App启动的过程，在了解启动流程的基础上制定大的优化原则和小的具体方案，希望对大家有所帮助。</p>
+<a id="more"></a>
+<h2 id="App启动的流程分析"><a href="#App启动的流程分析" class="headerlink" title="App启动的流程分析"></a>App启动的流程分析</h2><p>想做启动优化，那就先要了解清楚启动的各个流程，然后才能针对各个环节去做针对性措施。</p>
+<p>借用WWDC对启动阶段的定义图</p>
+<p><img src="/assets/app_launch_cycle.png" alt="App Launch Cycle"></p>
+<h3 id="System-Interface"><a href="#System-Interface" class="headerlink" title="System Interface"></a>System Interface</h3><ul>
+<li>加载App可执行文件</li>
+<li><p>Load dylibs</p>
+<p>  加载动态链接器<code>dyld</code> ，<code>dyld</code>会递归加载App依赖的动态库，然后执行符号绑定<code>Rebase</code>, <code>Bind</code>。一般应用会加载 100 到 400 个 dylib 文件，幸运是大部分是系统库，且系统会在操作系统启动时会计算和缓存系统动态库。</p>
+<p>  Apple为了解决安全问题，引入<code>ASLR</code>和<code>Code Sign</code>，如果不作符号修正，程序将没法正常运行，所以会有Rebase和Bind过程。</p>
+<p>  <img src="/assets/rebase_bind.png" width="200" height="160"></p>
+<ul>
+<li><p>Rebase</p>
+<p>  在镜像内部调整指针的指向，其实就是将内部指针都加上偏移量（Slide=实际新地址-旧地址）</p>
+</li>
+<li><p>Bind</p>
+<p>  修正指外部的指针，比如上图中malloc，这个符号不存在于我们App的Mach-O中，需要从外部的镜像中获取，这时候就需要Bind操作把这个关联起来。</p>
+</li>
+</ul>
+</li>
+<li><p>libSystem init</p>
+<p>   调用系统的的一些初始化方法，这部分一般时间比较固定，可以不用太关注。</p>
+</li>
+</ul>
+<h3 id="Runtime-Init"><a href="#Runtime-Init" class="headerlink" title="Runtime Init"></a>Runtime Init</h3><ul>
+<li><p>Objc和Swift的初始化</p>
+<p>  通过<code>_dyld_objc_notify_register</code>注册回调，在image加载完时初始化语言相关。</p>
+</li>
+<li><p>加载category</p>
+<p>  在上面语言初始化完之后，会加载所有category，处理category的所有方法，协议和属性等。</p>
+</li>
+<li><p>调用所有+load</p>
+<p>  也是通过向dyld 注册回调，在image加载完时，通过<code>load_images</code> 触发，处理该image相关的所有+load方法，按照继承层级依次调用：父类+load→子类+load→category +load，注意category的+load不会覆盖原类。</p>
+</li>
+<li><p>调用C++的构造函数属性函数 <code>attribute((constructor))</code></p>
+</li>
+</ul>
+<h3 id="UIKit-Init"><a href="#UIKit-Init" class="headerlink" title="UIKit Init"></a>UIKit Init</h3><ul>
+<li>实例化 UIApplication 和 UIApplicationDelegate</li>
+<li>开始事件处理和系统集成</li>
+</ul>
+<h3 id="Application-Init"><a href="#Application-Init" class="headerlink" title="Application Init"></a>Application Init</h3><p>这部分是我们熟悉的UIApplicationDelegate的几个生命周期调用：</p>
+<ul>
+<li>application:willFinishLaunchingWithOptions:</li>
+<li>application:didFinishLaunchingWithOptions:</li>
+<li>applicationDidBecomeActive:</li>
+<li>scene:willConnectToSession:options:</li>
+<li>sceneWillEnterForeground:</li>
+<li>sceneDidBecomeActive:</li>
+</ul>
+<h3 id="Initial-Frame-Render"><a href="#Initial-Frame-Render" class="headerlink" title="Initial Frame Render"></a>Initial Frame Render</h3><p>这里是App渲染第一帧，主要做了创建、布局和绘制视图的工作，并把准备好的第一帧提交给渲染层渲染。这里面布局计算，图片解码，图层树的递归commit到Render Server等都是可能影响耗时的点，所以要特别注意。</p>
+<h3 id="Extended"><a href="#Extended" class="headerlink" title="Extended"></a>Extended</h3><p>这里按照苹果的定义，是异步获取数据展示界面的逻辑。比如我们首页要从网络请求数据然后展示最新数据在页面上。</p>
+<h2 id="针对启动的各个流程我们能做什么"><a href="#针对启动的各个流程我们能做什么" class="headerlink" title="针对启动的各个流程我们能做什么"></a>针对启动的各个流程我们能做什么</h2><h3 id="总体原则"><a href="#总体原则" class="headerlink" title="总体原则"></a>总体原则</h3><p>不管哪个流程，我们都想尽量遵循下面两个原则：</p>
+<ol>
+<li><p>删</p>
+<p> 删的原则是指，对App启动和运行不是必须的任务，或者跟首页渲染第一帧无关的任务，都从启动流程中删除。对于删除的任务，可以进行懒加载的形式，需要时再调用；也可以换到其他的时机去触发，比如首页渲染完之后。</p>
+</li>
+<li><p>压</p>
+<p> 压的原则是指，对App启动和运行必须的任务，或者直接影响首页渲染第一帧的任务，都尽可能压缩其运行时间。至于做法，可以是优化方法内的实现，使其运行更快；也可以将方法执行的线程切换到子线程，以并发的形式降低其对整个启动过程的影响。</p>
+</li>
+</ol>
+<h3 id="具体方案"><a href="#具体方案" class="headerlink" title="具体方案"></a>具体方案</h3><h4 id="减少动态库"><a href="#减少动态库" class="headerlink" title="减少动态库"></a>减少动态库</h4><p>动态库的加载在启动阶段是必须的，所以我们要尽量减少非必要的动态库。针对这个，我们做了以下几点：</p>
+<ol>
+<li><p>梳理所有动态库，将用不到的或者可以简单替代的动态库删除</p>
+<p> 可以通过<code>otool -L xxx.app/xxx</code> 或者打开打包后的在产物的xxx.app/Frameworks路径中找到所有动态库，逐个筛选，将其中可以废弃和替代的动态库删除。</p>
+</li>
+<li><p>通过推进社区（第三方SDK）将现有动态库转成静态库 </p>
+<p> 因为依赖了第三方SDK，我们是不包含的源码的，所以这部分我们需要推进社区提供静态库的版本，或者通过cocoapods等工具打包SDK的静态库版本。</p>
+</li>
+<li><p>将我们自己的SDK编译成静态库</p>
+<p> 对于我们自己的SDK，因为有源码，所以直接修改<code>MACH_O_TYPE</code> 为<code>Static Library</code> 重新打包即可。</p>
+</li>
+<li><p>App最低支持系统版本升级到12.2</p>
+<p> 因为iOS在12.2版本及以上才内置了Swift的支持，所以在此之前Swift的动态库都是随着App下发的，也在xxx.app/Frameworks 里。</p>
+<p> 当然，这个决策是会直接应用到用户和订单的，所以是要有数据支持的，我们是根据用户占比到达某个阈值才支持12.2的。如果允许，甚至可以升级到iOS 13，因为iOS13以上dlyd3做了很多加载和缓存的优化。</p>
+</li>
+</ol>
+<h4 id="删除无用代码"><a href="#删除无用代码" class="headerlink" title="删除无用代码"></a>删除无用代码</h4><p>如果符号越多，很显然Rebase和Bind的处理时间就会越长，Objc的初始化也受影响，所以我们需要尽可能减少代码：</p>
+<ol>
+<li>通过逆向二进制或者生成linkmap，解析所有方法（<strong>TEXT.</strong>text）和引用到的方法（<strong>DATA </strong>objc_selrefs），找出无用方法删除</li>
+<li>解析所有类（<strong>DATA.</strong>objc_classlist）和引用到的类（<strong>DATA.</strong>objc_classrefs），找出无用的类删除</li>
+<li>使用第三方工具或者clang扫描重复代码，精简去重</li>
+<li>使用<code>LLVM_LTO</code>和<code>GCC_OPTIMIZATION_LEVEL</code>等其他编译选项优化二进制大小</li>
+</ol>
+<h4 id="合并category"><a href="#合并category" class="headerlink" title="合并category"></a>合并category</h4><p>合并category，可以减少category加载时的耗时。不过这部分收益不大，并且也会影响编程习惯，所以我们并没有投入很多时间，不再赘述。</p>
+<h4 id="删除-load"><a href="#删除-load" class="headerlink" title="删除+load"></a>删除+load</h4><p>以前会有很多代码为了省事，加到了+load中，这部分很显然占用启动时间，所以尽量要把这其中的代码转移，可以放到initialize中懒加载，或者放到启动任务中并发执行，这样尽量减少这部分的影响。</p>
+<p>Xcode调试时，可以通过正则添加所有+load方法的断点<code>br s -r &quot;\+\[.+ load\]$&quot;</code> ，然后使用<code>br list</code>打印出所有+load列表，这样方便我们定位所有+load。</p>
+<h4 id="UIApplication子类优化"><a href="#UIApplication子类优化" class="headerlink" title="UIApplication子类优化"></a>UIApplication子类优化</h4><p>为了减少UIKit Init的时间，可以对UIApplication的子类初始化工作优化。我们这部分不存在，所以没有做什么工作。</p>
+<h4 id="启动任务并发"><a href="#启动任务并发" class="headerlink" title="启动任务并发"></a>启动任务并发</h4><p>想象以下，如果<code>application:didFinishLaunchingWithOptions:</code>里面执行的所有启动任务不作任何处理，那么代码框架将会很乱，你的优化也只能单点单点去做。</p>
+<p>所以我们将<code>application:didFinishLaunchingWithOptions:</code>阶段所有方法任务化，一个任务做一种类型的事。任务拆分好之后，就可以根据任务之间的相关性，选择哪些任务是可以并发执行，哪些任务是必须有依赖关系前后执行。</p>
+<p>以前：</p>
+<p><img src="/assets/ios_launch_serial.png" alt=""></p>
+<p>现在：<br><img src="/assets/ios_launch_parrel.png" alt=""></p>
+<p>当然，任务的拆分颗粒度也很重要，拆分太粗的话，很难达到最优的组合，可能一个任务里的方法之间仍然有并行的空间。拆分太细的话，也有可能导致同一时间并发数太多，造成额外的线程切换开销。</p>
+<h4 id="I-O处理"><a href="#I-O处理" class="headerlink" title="I/O处理"></a>I/O处理</h4><p>尤其要注意启动阶段的I/O，一般出现于读取磁盘中的文件，比如配置文件等。</p>
+<p>使用Instrument→App Launch 去查看启动过程就会发现，如果主线程执行出现很多灰色的块，那就是I/O，找到这些I/O产生的方法，尽量在子线程并发执行，避免阻塞主线程。</p>
+<h4 id="首页数据的预加载和懒加载"><a href="#首页数据的预加载和懒加载" class="headerlink" title="首页数据的预加载和懒加载"></a>首页数据的预加载和懒加载</h4><p>首页上有很多数据要加载，比如图片，上次缓存在本地的数据等等，这些数据的加载如果在写代码时不作特殊处理，那会在主线程执行，不知不觉就会有很多耗时</p>
+<ul>
+<li><p>预加载</p>
+<p>  对首页渲染必须的数据，比如一个icon，或者一个翻译的数据，我们通过在启动任务（之前提到的拆分的并发任务）中新增加一个预加载启动任务，专门负责在<code>application:didFinishLaunchingWithOptions:</code>  的过程中并发执行数据的获取。因为获取数据大多比较耗时，所以放在子线程充分利用启动阶段的空闲。同时这类任务大多数是I/O操作，并不会占用太多CPU资源。</p>
+<p>  更进一步，其实可以对首页用到的资源在运行时作个标记，记录到磁盘，下次启动的时候读取这个记录，对用到的资源进行提前预加载，这样避免hard code很多资源名在代码中。</p>
+</li>
+<li><p>懒加载</p>
+<p>  首页的数据往往很多，但并不是一开始要全部用到。可以对数据作区分，和第一屏展示无关的，使用懒加载，真正用到的时候再去加载。</p>
+</li>
+</ul>
+<h4 id="二进制重排"><a href="#二进制重排" class="headerlink" title="二进制重排"></a>二进制重排</h4><ul>
+<li><p><code>page fault</code></p>
+<p>  由于虚拟内存的机制，应用启动时不会把所有数据加载到内存，而是以页为单位逐步从磁盘中加载，内存中的虚拟地址和磁盘中的物理地址有个映射关系。当程序执行时，如果发现要访问的东西不在内存里，就会触发一次<code>page fault</code> ，去磁盘中加载新的一页。</p>
+<p>  启动阶段有很多方法要调用，而这些方法在Mach-O中的的位置又是在编译时确认的。如果有10个方法刚好在不同页，可能就要产生10次<code>page fault</code> 。</p>
+</li>
+</ul>
+<p>二进制重排要做的就是将启动阶段要用到的方法，在编译时提前确定，通过.order文件告诉编译器，这样这些方法会排布在Mach-O的最前面，之前的10次<code>page fault</code> 和可能就变成一两次<code>page fault</code> 。</p>
+<p>通过在Other C Flags中添加<code>-fsanitize-coverage=func,trace-pc-guard</code> 再通过<code>__sanitizer_cov_trace_pc_guard</code>记录启动阶段所有方法的调用，再将这些写入到.order文件中，在Xcode的<code>ORDER_FILE</code> 设置中配置即可生效。</p>
+<p>通过测试，我们的二进制重排大概优化100-200ms。</p>
+<h4 id="其他通用手段"><a href="#其他通用手段" class="headerlink" title="其他通用手段"></a>其他通用手段</h4><p>针对启动任务和首页渲染阶段，通用的手段是通过instrument，profile出耗时长的任务，对任务针对性地作方法优化。如果有的方法是第三方库的，那就需要推进社区去更新。我们在做的过程中就给Firebase和Google的一些SDK提了很多issue，幸运的是对方开发人员配合很积极，对我们帮助很大。</p>
+<h2 id="成果如何"><a href="#成果如何" class="headerlink" title="成果如何"></a>成果如何</h2><p>通过长期的优化，以上手段全部用完之后，我们的启动时间从原来的2秒，优化到1秒以内。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在优化启动时间的过程中，我们的收获不仅是对启动时间的优化，也对系统的启动机制有了更深的了解，同时优化了我们自己的代码，使其变得更加更加健壮和高性能。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/iOS/" rel="tag"># iOS</a>
+          
+            <a href="/tags/Launch/" rel="tag"># Launch</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/03/19/ios-app-size-optimization/" rel="next" title="iOS App Size Optimization">
+                <i class="fa fa-chevron-left"></i> iOS App Size Optimization
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.jpeg" alt="shanks">
+            
+              <p class="site-author-name" itemprop="name">shanks</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">25</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/shanksguo" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:gyjjone@163.com" target="_blank" title="Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/gyjShanks" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i></a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.facebook.com/gyj.shanks" target="_blank" title="FB">
+                      
+                        <i class="fa fa-fw fa-facebook"></i></a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#引言"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#App启动的流程分析"><span class="nav-number">2.</span> <span class="nav-text">App启动的流程分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#System-Interface"><span class="nav-number">2.1.</span> <span class="nav-text">System Interface</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Runtime-Init"><span class="nav-number">2.2.</span> <span class="nav-text">Runtime Init</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UIKit-Init"><span class="nav-number">2.3.</span> <span class="nav-text">UIKit Init</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Application-Init"><span class="nav-number">2.4.</span> <span class="nav-text">Application Init</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Initial-Frame-Render"><span class="nav-number">2.5.</span> <span class="nav-text">Initial Frame Render</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Extended"><span class="nav-number">2.6.</span> <span class="nav-text">Extended</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#针对启动的各个流程我们能做什么"><span class="nav-number">3.</span> <span class="nav-text">针对启动的各个流程我们能做什么</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#总体原则"><span class="nav-number">3.1.</span> <span class="nav-text">总体原则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#具体方案"><span class="nav-number">3.2.</span> <span class="nav-text">具体方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#减少动态库"><span class="nav-number">3.2.1.</span> <span class="nav-text">减少动态库</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除无用代码"><span class="nav-number">3.2.2.</span> <span class="nav-text">删除无用代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#合并category"><span class="nav-number">3.2.3.</span> <span class="nav-text">合并category</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除-load"><span class="nav-number">3.2.4.</span> <span class="nav-text">删除+load</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#UIApplication子类优化"><span class="nav-number">3.2.5.</span> <span class="nav-text">UIApplication子类优化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#启动任务并发"><span class="nav-number">3.2.6.</span> <span class="nav-text">启动任务并发</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#I-O处理"><span class="nav-number">3.2.7.</span> <span class="nav-text">I/O处理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#首页数据的预加载和懒加载"><span class="nav-number">3.2.8.</span> <span class="nav-text">首页数据的预加载和懒加载</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#二进制重排"><span class="nav-number">3.2.9.</span> <span class="nav-text">二进制重排</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#其他通用手段"><span class="nav-number">3.2.10.</span> <span class="nav-text">其他通用手段</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#成果如何"><span class="nav-number">4.</span> <span class="nav-text">成果如何</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shanks</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Pisces</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
